@@ -118,6 +118,7 @@ export async function deleteTopicsByAssistantId(assistantId: string): Promise<vo
 export async function renameTopic(topicId: string, newName: string): Promise<void> {
   try {
     const topic = await getTopicById(topicId)
+
     if (!topic) {
       throw new Error(`Topic with ID ${topicId} not found`)
     }

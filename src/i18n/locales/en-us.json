@@ -91,6 +91,7 @@
       "confirm": "Confirm",
       "delete": "Delete",
       "description": "Description",
+      "edit": "Edit",
       "enabled": "Enabled",
       "error_occurred": "An error occurred",
       "file": "File",
@@ -118,7 +119,14 @@
       "tool": "Tool",
       "visit": "Visit",
       "websearch": "Web Search",
-      "yesterday": "Yesterday"
+      "yesterday": "Yesterday",
+      "copy": "Copy Text",
+      "select_text": "Select Text",
+      "delete_translation": "Delete Translation",
+      "play": "Play",
+      "regenerate": "Regenerate",
+      "stop": "Stop",
+      "translate": "Translate"
     },
     "error": {
       "backup": {
@@ -231,6 +239,7 @@
     },
     "message": {
       "delete_message": "Delete Message",
+      "delete_message_confirmation": "Are you sure you want to delete this message?",
       "delete_translation": "Remove Translation",
       "searching": "Searching...",
       "translate_message": "Translate Message",
@@ -553,6 +562,9 @@
         },
         "delete.content": "Are you sure you want to delete this provider?",
         "delete.title": "Delete Provider",
+        "edit": {
+          "title": "Edit Provider"
+        },
         "enabled": "On",
         "list.title": "Provider List",
         "not_found": "Provider not found",

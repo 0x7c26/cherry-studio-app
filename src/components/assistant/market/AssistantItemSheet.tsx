@@ -1,8 +1,9 @@
-import { BottomSheetBackdrop, BottomSheetModal, BottomSheetScrollView } from '@gorhom/bottom-sheet'
+import { BottomSheetBackdrop, BottomSheetModal } from '@gorhom/bottom-sheet'
 import { Settings2 } from '@tamagui/lucide-icons'
 import React, { forwardRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Alert, BackHandler } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Button, Stack, Text, useTheme, View, XStack, YStack } from 'tamagui'
 
 import { UnionPlusIcon } from '@/components/icons/UnionPlusIcon'
@@ -33,6 +34,7 @@ const AssistantItemSheet = forwardRef<BottomSheetModal, AssistantItemSheetProps>
     const { t } = useTranslation()
     const theme = useTheme()
     const { isDark } = useCustomTheme()
+    const { bottom } = useSafeAreaInsets()
 
     // 处理Android返回按钮事件
     useEffect(() => {
@@ -98,7 +100,7 @@ const AssistantItemSheet = forwardRef<BottomSheetModal, AssistantItemSheetProps>
 
     return (
       <BottomSheetModal
-        snapPoints={['85%']}
+        snapPoints={['80%']}
         enableDynamicSizing={false}
         ref={ref}
         style={{
@@ -112,98 +114,74 @@ const AssistantItemSheet = forwardRef<BottomSheetModal, AssistantItemSheetProps>
           backgroundColor: theme.color.val
         }}
         backdropComponent={renderBackdrop}>
-        <YStack flex={1}>
-          <BottomSheetScrollView
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: 100 }} // Add padding at the bottom to ensure content isn't hidden behind footer
-          >
-            <YStack flex={1} gap={17}>
-              {/* Main Content */}
-              <YStack flex={1} gap={25}>
-                {/* Header with emoji and groups */}
-                <YStack justifyContent="center" alignItems="center" gap={20}>
-                  <View marginTop={20}>
-                    <EmojiAvatar emoji={assistant.emoji} size={120} borderWidth={5} borderColor="$uiCardBackground" />
-                  </View>
-                  <Text fontSize={22} fontWeight="bold" textAlign="center">
-                    {assistant.name}
+        <YStack flex={1} gap={17}>
+          {/* Main Content */}
+          <YStack flex={1} gap={25}>
+            {/* Header with emoji and groups */}
+            <YStack justifyContent="center" alignItems="center" gap={20}>
+              <View marginTop={20}>
+                <EmojiAvatar emoji={assistant.emoji} size={120} borderWidth={5} borderColor="$uiCardBackground" />
+              </View>
+              <Text fontSize={22} fontWeight="bold" textAlign="center">
+                {assistant.name}
+              </Text>
+              {assistant.group && assistant.group.length > 0 && (
+                <XStack gap={10} flexWrap="wrap" justifyContent="center">
+                  {assistant.group.map((group, index) => (
+                    <GroupTag
+                      key={index}
+                      group={group}
+                      paddingHorizontal={12}
+                      paddingVertical={5}
+                      backgroundColor="$green10"
+                      color="$green100"
+                      borderWidth={0.5}
+                      borderColor="$green20"
+                    />
+                  ))}
+                </XStack>
+              )}
+              {assistant.model && (
+                <XStack gap={2} alignItems="center" justifyContent="center">
+                  <ModelIcon model={assistant.model} size={14} />
+                  <Text fontSize={14} numberOfLines={1} ellipsizeMode="tail">
+                    {assistant.model.name}
                   </Text>
-                  {assistant.group && assistant.group.length > 0 && (
-                    <XStack gap={10} flexWrap="wrap" justifyContent="center">
-                      {assistant.group.map((group, index) => (
-                        <GroupTag
-                          key={index}
-                          group={group}
-                          paddingHorizontal={12}
-                          paddingVertical={5}
-                          backgroundColor="$green10"
-                          color="$green100"
-                          borderWidth={0.5}
-                          borderColor="$green20"
-                        />
-                      ))}
-                    </XStack>
-                  )}
-                  {assistant.model && (
-                    <XStack gap={2} alignItems="center" justifyContent="center">
-                      <ModelIcon model={assistant.model} size={14} />
-                      <Text fontSize={14} numberOfLines={1} ellipsizeMode="tail">
-                        {assistant.model.name}
-                      </Text>
-                    </XStack>
-                  )}
-                </YStack>
-
-                <Stack>
-                  <SettingDivider />
-                </Stack>
-
-                {/* Description */}
-                {assistant.description && (
-                  <YStack gap={5}>
-                    <Text
-                      lineHeight={20}
-                      fontSize={16}
-                      fontWeight="bold"
-                      color="$textPrimary"
-                      numberOfLines={2}
-                      ellipsizeMode="tail">
-                      {t('common.description')}
-                    </Text>
-                    <Text lineHeight={20} color="$textSecondary" numberOfLines={2} ellipsizeMode="tail">
-                      {assistant.description}
-                    </Text>
-                  </YStack>
-                )}
-
-                {/* Additional details could go here */}
-                {assistant.prompt && (
-                  <YStack gap={5}>
-                    <Text
-                      lineHeight={20}
-                      fontSize={16}
-                      fontWeight="bold"
-                      color="$textPrimary"
-                      numberOfLines={2}
-                      ellipsizeMode="tail">
-                      {t('common.prompt')}
-                    </Text>
-                    <Text fontSize={16} lineHeight={20} numberOfLines={10} ellipsizeMode="tail">
-                      {assistant.prompt}
-                    </Text>
-                  </YStack>
-                )}
-              </YStack>
+                </XStack>
+              )}
             </YStack>
-          </BottomSheetScrollView>
 
+            <Stack>
+              <SettingDivider />
+            </Stack>
+
+            {/* Description */}
+            {assistant.description && (
+              <YStack gap={5}>
+                <Text lineHeight={20} fontSize={18} fontWeight="bold" color="$textPrimary">
+                  {t('common.description')}
+                </Text>
+                <Text lineHeight={20} color="$textSecondary" numberOfLines={2} ellipsizeMode="tail">
+                  {assistant.description}
+                </Text>
+              </YStack>
+            )}
+
+            {/* Additional details could go here */}
+            {assistant.prompt && (
+              <YStack gap={5}>
+                <Text lineHeight={20} fontSize={18} fontWeight="bold" color="$textPrimary">
+                  {t('common.prompt')}
+                </Text>
+                <Text fontSize={16} lineHeight={20} numberOfLines={6} ellipsizeMode="tail">
+                  {assistant.prompt}
+                </Text>
+              </YStack>
+            )}
+          </YStack>
           {/* Footer positioned absolutely at the bottom */}
           <XStack
-            position="absolute"
-            bottom={20}
-            left={0}
-            right={0}
-            padding={0}
+            bottom={bottom}
             justifyContent="space-between"
             alignItems="center"
             gap={15}

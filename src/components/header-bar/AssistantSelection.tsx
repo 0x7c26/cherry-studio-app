@@ -1,6 +1,5 @@
 import { BottomSheetModal } from '@gorhom/bottom-sheet'
 import { useNavigation } from '@react-navigation/native'
-import { ChevronRight } from '@tamagui/lucide-icons'
 import React, { useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button, Text, XStack, YStack } from 'tamagui'
@@ -43,8 +42,6 @@ export const AssistantSelection: React.FC<AssistantSelectionProps> = ({ assistan
     <>
       <Button unstyled onPress={handlePress} pressStyle={{ opacity: 0.6 }}>
         <XStack gap={14} alignItems="center" justifyContent="center">
-          {/*<Text fontSize={30}>{formateEmoji(assistant.emoji)}</Text>*/}
-
           <YStack gap={2} alignItems="center" justifyContent="flex-start">
             <Text fontSize={16} ellipsizeMode="tail" numberOfLines={1}>
               {assistant.name}
@@ -52,16 +49,7 @@ export const AssistantSelection: React.FC<AssistantSelectionProps> = ({ assistan
             <Text fontSize={11} ellipsizeMode="tail" numberOfLines={1} color="$gray11">
               {topic.name}
             </Text>
-            {/*{assistant.model && (
-              <XStack gap={2} alignItems="center" justifyContent="center">
-                <ModelIcon model={assistant.model} size={14} />
-                <Text fontSize={12} numberOfLines={1} ellipsizeMode="tail">
-                  {assistant.model.name}
-                </Text>
-              </XStack>
-            )}*/}
           </YStack>
-          {/* <ChevronRight color="$textPrimary" size={18} /> */}
         </XStack>
       </Button>
       <AssistantItemSheet

@@ -47,7 +47,7 @@ export default function SettingsScreen() {
         {
           title: t('settings.provider.title'),
           screen: 'ProvidersSettings',
-          specificScreen: 'ProvidersScreen',
+          specificScreen: 'ProviderListScreen',
           icon: <Cloud size={24} />
         },
         {

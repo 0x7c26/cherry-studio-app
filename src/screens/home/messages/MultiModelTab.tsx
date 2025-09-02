@@ -31,7 +31,7 @@ const MultiModelTab: FC<MultiModelTabProps> = ({ assistant, messages }) => {
         flex={1}
         gap={10}>
         <Tabs.List>
-          <XStack flex={1} gap={8} justifyContent="center" alignItems="center">
+          <XStack flex={1} gap={8} justifyContent="center" alignItems="center" paddingHorizontal={14}>
             <MultiModalIcon size={18} />
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               <XStack gap={5}>
@@ -73,7 +73,7 @@ const MultiModelTab: FC<MultiModelTabProps> = ({ assistant, messages }) => {
               transition={{
                 type: 'timing'
               }}>
-              <MessageItem message={message} />
+              <MessageItem message={message} assistant={assistant} />
               {/* 输出过程中不显示footer */}
               {message.status !== AssistantMessageStatus.PROCESSING && (
                 <MessageFooter assistant={assistant} message={message} />

@@ -91,6 +91,7 @@
       "confirm": "подтверждение",
       "delete": "Удалить",
       "description": "Описание",
+      "edit": "Редактировать",
       "enabled": "Включено",
       "error_occurred": "Произошла ошибка",
       "file": "Файл",
@@ -118,7 +119,14 @@
       "tool": "Инструмент",
       "visit": "Посетить",
       "websearch": "Поиск в интернете",
-      "yesterday": "Вчера"
+      "yesterday": "Вчера",
+      "copy": "Копировать текст",
+      "select_text": "Выбрать текст",
+      "delete_translation": "Удалить перевод",
+      "play": "Играть",
+      "regenerate": "Регенерация",
+      "stop": "Стоп",
+      "translate": "Перевод"
     },
     "error": {
       "backup": {
@@ -231,6 +239,7 @@
     },
     "message": {
       "delete_message": "Удалить сообщение",
+      "delete_message_confirmation": "Вы уверены, что хотите удалить это сообщение?",
       "delete_translation": "Удалить перевод",
       "searching": "Поиск...",
       "translate_message": "Перевести сообщение",
@@ -553,6 +562,9 @@
         },
         "delete.content": "Вы уверены, что хотите удалить этого поставщика?",
         "delete.title": "Удалить поставщика",
+        "edit": {
+          "title": "Редактирование поставщиков услуг"
+        },
         "enabled": "Вкл",
         "list.title": "Список поставщиков",
         "not_found": "Поставщик не найден",

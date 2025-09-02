@@ -80,7 +80,7 @@ export function transformDbToDataBackupProvider(dbRecord: any) {
 export async function getDataBackupProvider(providerId: string) {
   try {
     const rawProviders = await db.select().from(backup_providers).where(eq(backup_providers.id, providerId))
-    
+
     if (!rawProviders || rawProviders.length === 0) {
       return null
     }

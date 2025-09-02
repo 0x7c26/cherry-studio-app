@@ -30,18 +30,16 @@ export const HeaderBar = ({ topic }: HeaderBarProps) => {
   }
 
   return (
-    <>
-      <XStack alignItems="center" height={44} justifyContent="space-between">
-        <XStack alignItems="center" minWidth={40}>
-          <MenuButton onMenuPress={handleMenuPress} />
-        </XStack>
-        <XStack flex={1} justifyContent="center" alignItems="center">
-          <AssistantSelection assistant={assistant} topic={topic} />
-        </XStack>
-        <XStack alignItems="center" minWidth={40} justifyContent="flex-end">
-          {topic.messages.length > 0 && <NewTopicButton assistant={assistant} />}
-        </XStack>
+    <XStack alignItems="center" height={44} justifyContent="space-between" paddingHorizontal={14}>
+      <XStack alignItems="center" minWidth={40}>
+        <MenuButton onMenuPress={handleMenuPress} />
       </XStack>
-    </>
+      <XStack flex={1} justifyContent="center" alignItems="center">
+        <AssistantSelection assistant={assistant} topic={topic} />
+      </XStack>
+      <XStack alignItems="center" minWidth={40} justifyContent="flex-end">
+        {topic.messages.length > 0 && <NewTopicButton assistant={assistant} />}
+      </XStack>
+    </XStack>
   )
 }

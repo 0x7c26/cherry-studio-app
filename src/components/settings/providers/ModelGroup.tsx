@@ -95,7 +95,7 @@ export function ModelGroup({
           <FlatList
             data={models}
             renderItem={renderModelItem}
-            keyExtractor={model => model.id}
+            keyExtractor={(model, index) => `${model.id}-${index}`}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingVertical: 8 }}
             ItemSeparatorComponent={() => <YStack height={15} />}

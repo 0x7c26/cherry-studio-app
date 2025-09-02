@@ -1,21 +1,14 @@
 import { BottomSheetBackdrop, BottomSheetModal, BottomSheetView } from '@gorhom/bottom-sheet'
 import { Trash2 } from '@tamagui/lucide-icons'
-import React, { forwardRef, useEffect, useState } from 'react'
+import React, { forwardRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Alert, BackHandler } from 'react-native'
+import { BackHandler } from 'react-native'
 import { Button, useTheme, YStack } from 'tamagui'
 
 import { TranslatedIcon, TranslationIcon } from '@/components/icons/TranslationIcon'
+import { useMessageActions } from '@/hooks/useMessageActions'
 import { useTheme as useCustomTheme } from '@/hooks/useTheme'
-import { loggerService } from '@/services/LoggerService'
-import { deleteMessageById, fetchTranslateThunk } from '@/services/MessagesService'
 import { Message } from '@/types/message'
-import { findTranslationBlocks } from '@/utils/messageUtils/find'
-
-import { removeManyBlocks } from '../../../../db/queries/messageBlocks.queries'
-import { upsertMessages } from '../../../../db/queries/messages.queries'
-
-const logger = loggerService.withContext('MessageFooterMore')
 
 interface MessageFooterMoreProps {
   message: Message
@@ -25,28 +18,11 @@ const MessageFooterMoreSheet = forwardRef<BottomSheetModal, MessageFooterMorePro
   const { t } = useTranslation()
   const theme = useTheme()
   const { isDark } = useCustomTheme()
-  const [isTranslating, setIsTranslating] = useState(false)
-  const [isTranslated, setIsTranslated] = useState(false)
+  const { isTranslated, handleTranslate, handleDeleteTranslation, handleDelete } = useMessageActions({ message })
 
   const renderBackdrop = (props: any) => (
     <BottomSheetBackdrop {...props} appearsOnIndex={0} disappearsOnIndex={-1} opacity={0.5} pressBehavior="close" />
   )
-
-  useEffect(() => {
-    const checkTranslation = async () => {
-      if (!message) return
-
-      try {
-        const translationBlocks = await findTranslationBlocks(message)
-        setIsTranslated(translationBlocks.length > 0)
-      } catch (error) {
-        logger.error('Error checking translation:', error)
-        setIsTranslated(false)
-      }
-    }
-
-    checkTranslation()
-  }, [message])
 
   // 处理Android返回按钮事件
   useEffect(() => {
@@ -65,69 +41,18 @@ const MessageFooterMoreSheet = forwardRef<BottomSheetModal, MessageFooterMorePro
   }, [ref])
 
   const onTranslate = async () => {
-    if (!message) return
-
-    try {
-      if (isTranslating) return
-      ;(ref as React.RefObject<BottomSheetModal>)?.current?.dismiss() // close sheet
-      setIsTranslating(true)
-      const messageId = message.id
-      await fetchTranslateThunk(messageId, message)
-      setIsTranslated(true) // 翻译成功后更新状态
-    } catch (error) {
-      logger.error('Error during translation:', error)
-      const errorMessage = error instanceof Error ? error.message : String(error)
-
-      if (errorMessage.includes('Translate assistant model is not defined')) {
-        Alert.alert(t('common.error_occurred'), t('error.translate_assistant_model_not_defined'))
-      } else {
-        Alert.alert(t('common.error_occurred'), errorMessage)
-      }
-    } finally {
-      setIsTranslating(false)
-    }
+    ;(ref as React.RefObject<BottomSheetModal>)?.current?.dismiss()
+    await handleTranslate()
   }
 
   const onDeleteTranslation = async () => {
-    if (!message) return
-
-    try {
-      // 1. 删除 translation block
-      const translationBlocks = await findTranslationBlocks(message)
-      await removeManyBlocks(translationBlocks.map(block => block.id))
-
-      // 2. 删除 message 中的 translation block id
-      const updatedMessage = {
-        ...message,
-        blocks: message.blocks.filter(blockId => !translationBlocks.some(block => block.id === blockId))
-      }
-      await upsertMessages(updatedMessage)
-      setIsTranslated(false) // 删除成功后更新状态
-    } catch (error) {
-      logger.error('Error deleting translation:', error)
-      throw error
-    } finally {
-      ;(ref as React.RefObject<BottomSheetModal>)?.current?.dismiss()
-    }
+    await handleDeleteTranslation()
+    ;(ref as React.RefObject<BottomSheetModal>)?.current?.dismiss()
   }
 
   const onDelete = async () => {
-    if (!message) return
-
-    try {
-      await deleteMessageById(message.id)
-
-      if (message.askId) {
-        await deleteMessageById(message.askId)
-      }
-
-      logger.info('Message deleted successfully:', message.id)
-    } catch (error) {
-      logger.error('Error deleting message:', error)
-      throw error
-    } finally {
-      ;(ref as React.RefObject<BottomSheetModal>)?.current?.dismiss()
-    }
+    ;(ref as React.RefObject<BottomSheetModal>)?.current?.dismiss()
+    await handleDelete()
   }
 
   return (

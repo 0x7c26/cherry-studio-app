@@ -9,7 +9,7 @@ import { YStack } from 'tamagui'
 
 import { SettingContainer, SettingGroup } from '@/components/settings'
 import { HeaderBar } from '@/components/settings/HeaderBar'
-import { AddProviderSheet } from '@/components/settings/providers/AddProviderSheet'
+import { ProviderSheet } from '@/components/settings/providers/AddProviderSheet'
 import { ProviderItem } from '@/components/settings/providers/ProviderItem'
 import SafeAreaContainer from '@/components/ui/SafeAreaContainer'
 import { SearchInput } from '@/components/ui/SearchInput'
@@ -24,32 +24,50 @@ export default function ProviderListScreen() {
 
   const [searchText, setSearchText] = useState('')
   const [debouncedSearchText, setDebouncedSearchText] = useState('')
+  const [sheetMode, setSheetMode] = useState<'add' | 'edit'>('add')
+  const [editingProvider, setEditingProvider] = useState<Provider | undefined>(undefined)
 
-  // 创建防抖函数，300ms 延迟
-  const debouncedSetSearch = debounce((text: string) => {
-    setDebouncedSearchText(text)
-  }, 300)
+  // Use useRef to maintain stable debounce function across renders
+  const debouncedSetSearchRef = useRef(
+    debounce((text: string) => {
+      setDebouncedSearchText(text)
+    }, 300)
+  )
 
-  // 监听 searchText 变化，触发防抖更新
+  // Listen to searchText changes and trigger debounced update
   useEffect(() => {
-    debouncedSetSearch(searchText)
+    const debouncedFunc = debouncedSetSearchRef.current
+    debouncedFunc(searchText)
 
-    // 清理函数，组件卸载时取消防抖
+    // Cleanup function to cancel debounce on unmount
     return () => {
-      debouncedSetSearch.cancel()
+      debouncedFunc.cancel()
     }
-  })
+  }, [searchText])
 
   const filteredProviders = providers.filter(
     p => p.name && p.name.toLowerCase().includes(debouncedSearchText.toLowerCase())
   )
 
   const onAddProvider = () => {
+    setSheetMode('add')
+    setEditingProvider(undefined)
     bottomSheetRef.current?.present()
   }
 
+  const onEditProvider = (provider: Provider) => {
+    setSheetMode('edit')
+    setEditingProvider(provider)
+    bottomSheetRef.current?.present()
+  }
+
+  const handleProviderSave = () => {
+    // Force refresh by clearing and resetting the editing provider
+    setEditingProvider(undefined)
+  }
+
   const renderProviderItem = ({ item }: ListRenderItemInfo<Provider>) => (
-    <ProviderItem key={item.id} provider={item} mode="checked" />
+    <ProviderItem key={item.id} provider={item} mode={item.enabled ? 'enabled' : 'checked'} onEdit={onEditProvider} />
   )
 
   return (
@@ -78,13 +96,14 @@ export default function ProviderListScreen() {
                 estimatedItemSize={60}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingBottom: 24 }}
+                extraData={providers}
               />
             </SettingGroup>
           </YStack>
         </SettingContainer>
       )}
 
-      <AddProviderSheet ref={bottomSheetRef} />
+      <ProviderSheet ref={bottomSheetRef} mode={sheetMode} editProvider={editingProvider} onSave={handleProviderSave} />
     </SafeAreaContainer>
   )
 }

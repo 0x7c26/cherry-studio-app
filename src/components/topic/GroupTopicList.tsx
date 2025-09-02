@@ -105,12 +105,12 @@ export function GroupedTopicList({ topics, enableScroll, handleNavigateChatScree
   const handleRename = async (topicId: string, newName: string) => {
     try {
       await renameTopic(topicId, newName)
-      
+
       const updatedTopics = localTopics.map(topic =>
         topic.id === topicId ? { ...topic, name: newName, updatedAt: new Date().toISOString() } : topic
       )
       setLocalTopics(updatedTopics)
-      
+
       logger.info('Topic renamed successfully', topicId, newName)
     } catch (error) {
       logger.error('Error renaming topic:', error)

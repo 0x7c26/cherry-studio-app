@@ -16,6 +16,7 @@ import { Assistant, Topic } from '@/types/assistant'
 import { DrawerNavigationProps } from '@/types/naviagate'
 import { storage } from '@/utils'
 import { haptic } from '@/utils/haptic'
+
 import EmojiAvatar from '../assistant/EmojiAvator'
 
 type TimeFormat = 'time' | 'date'
@@ -45,6 +46,7 @@ const TopicItem: FC<TopicItemProps> = ({
 
   const openTopic = () => {
     dispatch(setCurrentTopicId(topic.id))
+
     if (handleNavigateChatScreen) {
       handleNavigateChatScreen(topic.id)
     } else {
@@ -111,7 +113,11 @@ const TopicItem: FC<TopicItemProps> = ({
   }
 
   return (
-    <ContextMenu.Root>
+    <ContextMenu.Root
+      // @ts-expect-error: https://github.com/nandorojo/zeego/issues/80
+      __unsafeIosProps={{
+        shouldWaitForMenuToHideBeforeFiringOnPressMenuItem: false
+      }}>
       <ContextMenu.Trigger>
         <XStack
           onPress={openTopic}
@@ -148,11 +154,11 @@ const TopicItem: FC<TopicItemProps> = ({
       <ContextMenu.Content>
         <ContextMenu.Item key="rename" onSelect={handleRename}>
           <ContextMenu.ItemTitle>{t('common.rename')}</ContextMenu.ItemTitle>
-          <ContextMenu.ItemIcon ios={{ name: 'pencil' }}>
+          <ContextMenu.ItemIcon ios={{ name: 'rectangle.and.pencil.and.ellipsis' }}>
             <Edit3 size={16} color="$textPrimary" />
           </ContextMenu.ItemIcon>
         </ContextMenu.Item>
-        <ContextMenu.Item key="delete" onSelect={async () => await onDelete?.(topic.id)}>
+        <ContextMenu.Item key="delete" destructive onSelect={async () => await onDelete?.(topic.id)}>
           <ContextMenu.ItemTitle>{t('common.delete')}</ContextMenu.ItemTitle>
           <ContextMenu.ItemIcon ios={{ name: 'trash' }}>
             <Trash2 size={16} color="red" />

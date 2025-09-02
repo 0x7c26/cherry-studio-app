@@ -8,7 +8,7 @@ import { uuid } from '@/utils'
 import { deleteFileById, getAllFiles, getFileById, upsertFiles } from '../../db/queries/files.queries'
 const logger = loggerService.withContext('File Service')
 
-const fileStorageDir = new Directory(Paths.cache, 'Files')
+export const fileStorageDir = new Directory(Paths.cache, 'Files')
 
 // 辅助函数，确保目录存在
 async function ensureDirExists() {
@@ -70,7 +70,7 @@ export async function uploadFiles(files: Omit<FileType, 'md5'>[]): Promise<FileT
     try {
       const sourceUri = file.path
       const destinationUri = `${fileStorageDir.uri}${file.id}.${file.ext}`
-
+      console.log('destinationUri', destinationUri)
       await FileSystem.copyAsync({
         from: sourceUri,
         to: destinationUri

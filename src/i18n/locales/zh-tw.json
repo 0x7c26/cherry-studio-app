@@ -91,6 +91,7 @@
       "confirm": "確認",
       "delete": "刪除",
       "description": "描述",
+      "edit": "編輯",
       "enabled": "已啟用",
       "error_occurred": "發生錯誤",
       "file": "檔案",
@@ -118,7 +119,14 @@
       "tool": "工具",
       "visit": "訪問",
       "websearch": "網路搜尋",
-      "yesterday": "昨天"
+      "yesterday": "昨天",
+      "copy": "複製文本",
+      "select_text": "選擇文本",
+      "delete_translation": "刪除翻譯",
+      "play": "播放",
+      "regenerate": "重新生成",
+      "stop": "停止",
+      "translate": "翻譯"
     },
     "error": {
       "backup": {
@@ -231,6 +239,7 @@
     },
     "message": {
       "delete_message": "刪除訊息",
+      "delete_message_confirmation": "您確定要刪除這條訊息嗎？",
       "delete_translation": "刪除翻譯",
       "searching": "搜尋中...",
       "translate_message": "翻譯訊息",
@@ -553,6 +562,9 @@
         },
         "delete.content": "您確定要刪除這個提供者嗎？",
         "delete.title": "刪除提供者",
+        "edit": {
+          "title": "編輯服務供應商"
+        },
         "enabled": "開啟",
         "list.title": "提供商列表",
         "not_found": "找不到提供商",

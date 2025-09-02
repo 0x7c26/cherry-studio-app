@@ -122,3 +122,12 @@ export function getProviderByIdSync(providerId: string): Provider | undefined {
     throw error // 重新抛出错误以便上层调用者可以处理
   }
 }
+
+export async function deleteProvider(providerId: string): Promise<void> {
+  try {
+    await db.delete(providers).where(eq(providers.id, providerId))
+  } catch (error) {
+    logger.error('Error in deleteProvider:', error)
+    throw error
+  }
+}

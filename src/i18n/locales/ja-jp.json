@@ -91,6 +91,7 @@
       "confirm": "確認",
       "delete": "削除",
       "description": "説明",
+      "edit": "編集",
       "enabled": "有効",
       "error_occurred": "エラーが発生しました",
       "file": "ファイル",
@@ -118,7 +119,14 @@
       "tool": "ツール",
       "visit": "訪問",
       "websearch": "ウェブ検索",
-      "yesterday": "昨日"
+      "yesterday": "昨日",
+      "copy": "テキストをコピー",
+      "select_text": "テキストを選択",
+      "delete_translation": "翻訳を削除",
+      "play": "再生",
+      "regenerate": "再生成",
+      "stop": "停止",
+      "translate": "翻訳"
     },
     "error": {
       "backup": {
@@ -231,6 +239,7 @@
     },
     "message": {
       "delete_message": "メッセージを削除",
+      "delete_message_confirmation": "このメッセージを削除しますか？",
       "delete_translation": "翻訳を削除",
       "searching": "検索中...",
       "translate_message": "メッセージを翻訳",
@@ -553,6 +562,9 @@
         },
         "delete.content": "このプロバイダーを削除してもよろしいですか？",
         "delete.title": "プロバイダーの削除",
+        "edit": {
+          "title": "編集サービスプロバイダ"
+        },
         "enabled": "オン",
         "list.title": "プロバイダーリスト",
         "not_found": "プロバイダーが見つかりません",

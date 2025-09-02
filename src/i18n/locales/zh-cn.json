@@ -91,6 +91,7 @@
       "confirm": "确认",
       "delete": "删除",
       "description": "描述",
+      "edit": "编辑",
       "enabled": "已启用",
       "error_occurred": "发生错误",
       "file": "文件",
@@ -118,7 +119,14 @@
       "tool": "工具",
       "visit": "访问",
       "websearch": "网络搜索",
-      "yesterday": "昨天"
+      "yesterday": "昨天",
+      "copy": "复制文本",
+      "select_text": "选择文本",
+      "play": "播放",
+      "stop": "停止",
+      "regenerate": "重新生成",
+      "translate": "翻译",
+      "delete_translation": "删除翻译"
     },
     "error": {
       "backup": {
@@ -127,7 +135,7 @@
         "title": "备份失败"
       },
       "chat": {
-        "response": "出错了，如果没有配置 API 密钥，请前往设置 > 模型提供商中配置密钥"
+        "response": "出错了，如果没有配置 API 密钥，请前往设置 > 模型服务商中配置密钥"
       },
       "http": {
         "400": "请求错误，请检查请求参数是否正确。如果修改了模型设置，请重置到默认设置",
@@ -146,7 +154,7 @@
       },
       "no_api_key": "API 密钥未配置",
       "pause_placeholder": "已中断",
-      "provider_disabled": "模型提供商未启用",
+      "provider_disabled": "模型服务商未启用",
       "render": {
         "description": "消息内容渲染失败，请检查消息内容格式是否正确",
         "title": "渲染错误"
@@ -231,6 +239,7 @@
     },
     "message": {
       "delete_message": "删除消息",
+      "delete_message_confirmation": "您确定要删除这条消息吗？",
       "delete_translation": "删除翻译",
       "searching": "正在搜索...",
       "translate_message": "翻译消息",
@@ -415,7 +424,7 @@
           },
           "steps": {
             "restore_assistants": "恢复助手",
-            "restore_llm_providers": "恢复LLM提供商",
+            "restore_llm_providers": "恢复LLM服务商",
             "restore_messages_blocks": "恢复消息",
             "restore_topics": "恢复话题",
             "restore_websearch": "恢复网络搜索"
@@ -522,10 +531,10 @@
         "title": "个人设置"
       },
       "provider": {
-        "add.name": "提供者名称",
+        "add.name": "服务商名称",
         "add.name.placeholder": "示例：OpenAI",
-        "add.title": "添加供应商",
-        "add.type": "提供者类型",
+        "add.title": "添加服务商",
+        "add.type": "服务商类型",
         "added": "已添加",
         "api.url.preview": "预览: {{url}}",
         "api.url.reset": "重置",
@@ -551,14 +560,17 @@
           "model_empty": "模型不能为空",
           "title": "模型检查失败"
         },
-        "delete.content": "您确定要删除此提供者吗？",
-        "delete.title": "删除提供者",
+        "delete.content": "您确定要删除此服务商吗？",
+        "delete.title": "删除服务商",
+        "edit": {
+          "title": "编辑服务商"
+        },
         "enabled": "开启",
-        "list.title": "提供商列表",
-        "not_found": "未找到提供商",
-        "not_found_message": "导航到提供商页面时出现错误",
-        "search": "搜索提供商...",
-        "title": "模型提供商"
+        "list.title": "服务商列表",
+        "not_found": "未找到服务商",
+        "not_found_message": "导航到服务商页面时出现错误",
+        "search": "搜索服务商...",
+        "title": "模型服务商"
       },
       "proxy.title": "代理地址",
       "siyuan": {
@@ -630,21 +642,21 @@
         "check_success": "检查成功 🎉",
         "check_success_message": "API 运作正常",
         "contentLengthLimit": "内容长度限制",
-        "empty": "暂无提供者...",
-        "empty.description": "点击按钮添加提供者",
+        "empty": "暂无服务商...",
+        "empty.description": "点击按钮添加服务商",
         "overrideSearchService": "覆盖搜索服务",
         "provider": {
           "api": {
-            "title": "API 服务提供商"
+            "title": "API 服务服务商"
           },
           "free": {
-            "title": "免费服务提供商"
+            "title": "免费服务服务商"
           },
-          "title": "网络搜索服务提供商"
+          "title": "网络搜索服务服务商"
         },
         "searchCount": "搜索数量",
         "searchWithDates": "包含日期搜索",
-        "selectPlaceholder": "请选择网页搜索提供商...",
+        "selectPlaceholder": "请选择网页搜索服务商...",
         "subscribe.title": "黑名单订阅",
         "title": "网络搜索"
       },
@@ -667,7 +679,7 @@
     "topics": {
       "new_topic": "新话题",
       "rename": {
-        "title": "重命名话题",
+        "title": "重命名话题"
       },
       "title": "话题",
       "title.recent": "最近的话题"

@@ -107,10 +107,10 @@ const ChatScreen = () => {
           style={{ flex: 1 }}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 10 : 10}>
-          <YStack paddingHorizontal={14} backgroundColor="$colorTransparent" flex={1}>
+          <YStack flex={1}>
             <HeaderBar topic={topic} />
 
-            <View style={{ flex: 1, marginVertical: 10, paddingHorizontal: 4 }}>
+            <View style={{ flex: 1, marginVertical: 10, paddingHorizontal: 0 }}>
               {!hasMessage ? <WelcomeContent /> : <ChatContent key={topic.id} topic={topic} />}
             </View>
             <MessageInput topic={topic} />

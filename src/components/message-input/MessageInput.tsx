@@ -99,6 +99,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({ topic }) => {
 
   return (
     <LinearGradient
+      marginHorizontal={14}
       padding={1}
       borderRadius={20}
       colors={

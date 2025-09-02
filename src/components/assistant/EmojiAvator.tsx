@@ -1,9 +1,9 @@
+import { BlurView } from 'expo-blur'
 import React from 'react'
 import { Stack, Text, View } from 'tamagui'
-import { BlurView } from 'expo-blur'
 
-import { formateEmoji } from '@/utils/formats'
 import { useTheme } from '@/hooks/useTheme'
+import { formateEmoji } from '@/utils/formats'
 
 interface EmojiAvatarProps {
   emoji?: string

@@ -5,7 +5,6 @@ import { isEmpty } from 'lodash'
 import { FC } from 'react'
 import React from 'react'
 import { useTranslation } from 'react-i18next'
-import { Pressable } from 'react-native-gesture-handler'
 import { Text, XStack, YStack } from 'tamagui'
 import * as ContextMenu from 'zeego/context-menu'
 

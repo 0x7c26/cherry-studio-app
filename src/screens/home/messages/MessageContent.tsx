@@ -3,15 +3,18 @@ import { StyleSheet } from 'react-native'
 import { Stack, View } from 'tamagui'
 
 import { useMessageBlocks } from '@/hooks/useMessageBlocks'
+import { Assistant } from '@/types/assistant'
 import { Message, MessageBlockType } from '@/types/message'
 
 import MessageBlockRenderer from './blocks'
+import MessageContextMenu from './MessageContextMenu'
 
 interface Props {
   message: Message
+  assistant?: Assistant
 }
 
-const MessageContent: React.FC<Props> = ({ message }) => {
+const MessageContent: React.FC<Props> = ({ message, assistant }) => {
   const isUser = message.role === 'user'
   const { processedBlocks } = useMessageBlocks(message.id)
 
@@ -23,20 +26,26 @@ const MessageContent: React.FC<Props> = ({ message }) => {
   )
 
   return (
-    <View style={[isUser ? styles.userContainer : undefined, styles.container]}>
+    <View
+      style={[isUser ? styles.userContainer : undefined, styles.container]}
+      paddingHorizontal={14}
+      borderRadius={16}>
       {mediaBlocks.length > 0 && <MessageBlockRenderer blocks={mediaBlocks} />}
       {contentBlocks.length > 0 && (
-        <Stack
-          style={[
-            isUser ? styles.contentWrapper : undefined,
-            isUser ? styles.userMessageContent : styles.assistantMessageContent,
-            mediaBlocks.length > 0 && { marginTop: 8 }
-          ]}
-          backgroundColor={isUser ? '$green10' : '$colorTransparent'}
-          borderColor={isUser ? '$green20' : '$colorTransparent'}
-          borderWidth={1}>
-          <MessageBlockRenderer blocks={contentBlocks} />
-        </Stack>
+        <MessageContextMenu message={message} assistant={assistant}>
+          <Stack
+            style={[
+              isUser ? styles.contentWrapper : undefined,
+              isUser ? styles.userMessageContent : styles.assistantMessageContent,
+              mediaBlocks.length > 0 && { marginTop: 8 }
+            ]}
+            borderRadius={16}
+            backgroundColor={isUser ? '$green10' : '$green10'}
+            borderColor={isUser ? '$green20' : '$colorTransparent'}
+            borderWidth={1}>
+            <MessageBlockRenderer blocks={contentBlocks} />
+          </Stack>
+        </MessageContextMenu>
       )}
     </View>
   )
