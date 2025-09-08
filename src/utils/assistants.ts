@@ -77,3 +77,7 @@ export function getAssistantWithTopic(assistants, topics) {
   // 4. 返回处理后的 assistants 数组
   return assistantsWithTopics
 }
+
+export const isToolUseModeFunction = (assistant: Assistant) => {
+  return assistant.settings?.toolUseMode === 'function'
+}

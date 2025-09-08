@@ -1,20 +1,19 @@
 import { useNavigation } from '@react-navigation/native'
 import React, { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Text, useTheme, XStack, YStack } from 'tamagui'
+import { Text, XStack, YStack } from 'tamagui'
 
 import { SettingContainer } from '@/components/settings'
 import { HeaderBar } from '@/components/settings/HeaderBar'
 import SafeAreaContainer from '@/components/ui/SafeAreaContainer'
 import { defaultLanguage, languagesOptions } from '@/config/languages'
 import { useBuiltInAssistants } from '@/hooks/useAssistant'
-import { NavigationProps } from '@/types/naviagate'
+import { GeneralSettingsNavigationProps } from '@/types/naviagate'
 import { storage } from '@/utils'
 
 export default function LanguageChangeScreen() {
   const { t, i18n } = useTranslation()
-  const theme = useTheme()
-  const navigation = useNavigation<NavigationProps>()
+  const navigation = useNavigation<GeneralSettingsNavigationProps>()
   const [currentLanguage, setCurrentLanguage] = useState<string>(storage.getString('language') || defaultLanguage)
   const { resetBuiltInAssistants } = useBuiltInAssistants()
 
@@ -55,11 +54,11 @@ export default function LanguageChangeScreen() {
                 height={20}
                 borderRadius={10}
                 borderWidth={2}
-                borderColor={currentLanguage === opt.value ? theme.color.val : theme['$color8']}
+                borderColor={currentLanguage === opt.value ? '$textPrimary' : '$textSecondary'}
                 alignItems="center"
                 justifyContent="center">
                 {currentLanguage === opt.value && (
-                  <XStack width={10} height={10} borderRadius={5} backgroundColor={theme.color.val} />
+                  <XStack width={10} height={10} borderRadius={5} backgroundColor="$textPrimary" />
                 )}
               </XStack>
             </XStack>

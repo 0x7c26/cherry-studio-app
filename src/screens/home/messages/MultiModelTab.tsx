@@ -46,6 +46,7 @@ const MultiModelTab: FC<MultiModelTabProps> = ({ assistant, messages }) => {
                       borderRadius={48}
                       justifyContent="center"
                       alignItems="center"
+                      backgroundColor="$colorTransparent"
                       height={26}>
                       <Text
                         fontSize={12}

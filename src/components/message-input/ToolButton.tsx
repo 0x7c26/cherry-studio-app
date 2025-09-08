@@ -5,15 +5,15 @@ import { Keyboard } from 'react-native'
 import { Button } from 'tamagui'
 
 import { Assistant } from '@/types/assistant'
-import { FileType } from '@/types/file'
+import { FileMetadata } from '@/types/file'
 import { haptic } from '@/utils/haptic'
 
 import { AssetsIcon } from '../icons/AssetsIcon'
 import ToolSheet from '../sheets/ToolSheet'
 
 interface AddAssetsButtonProps {
-  files: FileType[]
-  setFiles: (files: FileType[]) => void
+  files: FileMetadata[]
+  setFiles: (files: FileMetadata[]) => void
   assistant: Assistant
   updateAssistant: (assistant: Assistant) => Promise<void>
 }

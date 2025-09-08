@@ -6,7 +6,7 @@ import { loggerService } from '@/services/LoggerService'
 import { setAvatar, setUserName } from '@/store/settings'
 import { Assistant } from '@/types/assistant'
 import { BackupData, ExportIndexedData, ExportReduxData } from '@/types/databackup'
-import { FileType } from '@/types/file'
+import { FileMetadata } from '@/types/file'
 import { Message } from '@/types/message'
 
 import { upsertAssistants } from '../../db/queries/assistants.queries'
@@ -20,13 +20,13 @@ const logger = loggerService.withContext('Backup Service')
 const fileStorageDir = new Directory(Paths.cache, 'Files')
 
 export type RestoreStepId =
-  | 'restore_topics'
-  | 'restore_messages_blocks'
   | 'restore_llm_providers'
   | 'restore_assistants'
   | 'restore_websearch'
   | 'restore_user_avatar'
   | 'restore_user_name'
+  | 'restore_topics'
+  | 'restore_messages_blocks'
 
 export type StepStatus = 'pending' | 'in_progress' | 'completed' | 'error'
 
@@ -102,7 +102,11 @@ async function restoreReduxData(data: ExportReduxData, onProgress: OnProgressCal
   onProgress({ step: 'restore_user_name', status: 'completed' })
 }
 
-export async function restore(backupFile: Omit<FileType, 'md5'>, onProgress: OnProgressCallback, dispatch: Dispatch) {
+export async function restore(
+  backupFile: Omit<FileMetadata, 'md5'>,
+  onProgress: OnProgressCallback,
+  dispatch: Dispatch
+) {
   if (!fileStorageDir.exists) {
     fileStorageDir.create({ intermediates: true, overwrite: true })
   }

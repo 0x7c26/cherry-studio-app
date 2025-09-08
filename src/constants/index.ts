@@ -2,8 +2,18 @@ export const DEFAULT_TIMEOUT = 5 * 1000 * 60
 export const DEFAULT_TEMPERATURE = 1.0
 export const DEFAULT_CONTEXTCOUNT = 5
 export const DEFAULT_MAX_TOKENS = 4096
+export const SYSTEM_PROMPT_THRESHOLD = 128
 export const DEFAULT_KNOWLEDGE_DOCUMENT_COUNT = 6
 export const DEFAULT_KNOWLEDGE_THRESHOLD = 0.0
+export const DEFAULT_WEBSEARCH_RAG_DOCUMENT_COUNT = 1
+export const TOKENFLUX_HOST = 'https://tokenflux.ai'
+
+// Messages loading configuration
+export const INITIAL_MESSAGES_COUNT = 20
+export const LOAD_MORE_COUNT = 20
+
+export const MAX_CONTEXT_COUNT = 100
+export const UNLIMITED_CONTEXT_COUNT = 100000
 
 export const defaultTimeout = 5 * 1000 * 60
 

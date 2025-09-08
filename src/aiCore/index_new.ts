@@ -7,33 +7,63 @@
  * 2. 失败时fallback到原有实现
  * 3. 暂时保持接口兼容性
  */
-import { createExecutor, generateImage, StreamTextParams } from '@cherrystudio/ai-core'
+import { createExecutor } from '@cherrystudio/ai-core'
+import { type ImageModel, type LanguageModel, type Provider as AiSdkProvider, wrapLanguageModel } from 'ai'
 import { fetch as expoFetch } from 'expo/fetch'
 
-import { isNotSupportedImageSizeModel } from '@/config/models/image'
-import { Model, Provider } from '@/types/assistant'
-import { ChunkType } from '@/types/chunk'
+import { loggerService } from '@/services/LoggerService'
+import { AiSdkModel, StreamTextParams } from '@/types/aiCoretypes'
+import { Assistant, Model, Provider } from '@/types/assistant'
 import { GenerateImageParams } from '@/types/image'
 
 import AiSdkToChunkAdapter from './chunk/AiSdkToChunkAdapter'
 import LegacyAiProvider from './legacy/index'
-import { CompletionsResult } from './legacy/middleware/schemas'
+import { CompletionsParams, CompletionsResult } from './legacy/middleware/schemas'
 import { AiSdkMiddlewareConfig, buildAiSdkMiddlewares } from './middleware/AiSdkMiddlewareBuilder'
 import { buildPlugins } from './plugins/PluginBuilder'
-import { getActualProvider, isModernSdkSupported, providerToAiSdkConfig } from './provider/ProviderConfigProcessor'
+import { buildClaudeCodeSystemMessage } from './provider/config/anthropic'
+import { createAiSdkProvider } from './provider/factory'
+import {
+  getActualProvider,
+  isModernSdkSupported,
+  prepareSpecialProviderConfig,
+  providerToAiSdkConfig
+} from './provider/providerConfig'
 
-// const logger = loggerService.withContext('ToolCallChunkHandler')
+const logger = loggerService.withContext('ModernAiProvider')
+
+export type ModernAiProviderConfig = AiSdkMiddlewareConfig & {
+  assistant: Assistant
+  // topicId for tracing
+  topicId?: string
+  callType: string
+}
 
 export default class ModernAiProvider {
   private legacyProvider: LegacyAiProvider
-  private config: ReturnType<typeof providerToAiSdkConfig>
+  private config?: ReturnType<typeof providerToAiSdkConfig>
   private actualProvider: Provider
+  private model?: Model
+  private localProvider: Awaited<AiSdkProvider> | null = null
 
-  constructor(model: Model, provider: Provider) {
-    this.actualProvider = getActualProvider(model, provider)
+  // 构造函数重载签名
+  constructor(model: Model, provider?: Provider)
+  constructor(provider: Provider)
+  constructor(modelOrProvider: Model | Provider, provider?: Provider)
+  constructor(modelOrProvider: Model | Provider, provider?: Provider) {
+    if (this.isModel(modelOrProvider)) {
+      // 传入的是 Model
+      this.model = modelOrProvider
+      this.actualProvider = provider || getActualProvider(modelOrProvider)
+      // 只保存配置，不预先创建executor
+      this.config = providerToAiSdkConfig(this.actualProvider, modelOrProvider)
+    } else {
+      // 传入的是 Provider
+      this.actualProvider = modelOrProvider
+      // model为可选，某些操作（如fetchModels）不需要model
+    }
 
     this.legacyProvider = new LegacyAiProvider(this.actualProvider)
-    this.actualProvider.apiKey = this.getApiKey()
 
     const customFetch = async (url, options) => {
       const response = await expoFetch(url, {
@@ -45,61 +75,242 @@ export default class ModernAiProvider {
       return response
     }
 
-    // TODO:如果后续在调用completions时需要切换provider的话,
-    // 初始化时不构建中间件，等到需要时再构建
-    this.config = providerToAiSdkConfig(this.actualProvider)
-    this.config.options.fetch = customFetch
+    if (this.config) {
+      this.config.options.fetch = customFetch
+    }
+  }
+
+  /**
+   * 类型守卫函数：通过 provider 属性区分 Model 和 Provider
+   */
+  private isModel(obj: Model | Provider): obj is Model {
+    return 'provider' in obj && typeof obj.provider === 'string'
   }
 
   public getActualProvider() {
     return this.actualProvider
   }
-
-  public async completions(
-    modelId: string,
-    params: StreamTextParams,
-    middlewareConfig: AiSdkMiddlewareConfig
-  ): Promise<CompletionsResult> {
-    console.log('completions', modelId, params, middlewareConfig)
-
-    if (middlewareConfig.isImageGenerationEndpoint) {
-      return await this.modernImageGeneration(modelId, params, middlewareConfig)
+  public async completions(modelId: string, params: StreamTextParams, config: ModernAiProviderConfig) {
+    // 检查model是否存在
+    if (!this.model) {
+      throw new Error('Model is required for completions. Please use constructor with model parameter.')
     }
 
-    return await this.modernCompletions(modelId, params, middlewareConfig)
+    // 确保配置存在
+    if (!this.config) {
+      this.config = providerToAiSdkConfig(this.actualProvider, this.model)
+    }
+
+    // 准备特殊配置
+    await prepareSpecialProviderConfig(this.actualProvider, this.config)
+
+    // 提前创建本地 provider 实例
+    if (!this.localProvider) {
+      this.localProvider = await createAiSdkProvider(this.config)
+    }
+
+    // 提前构建中间件
+    const middlewares = buildAiSdkMiddlewares({
+      ...config,
+      provider: this.actualProvider
+    })
+    logger.debug('Built middlewares in completions', {
+      middlewareCount: middlewares.length,
+      isImageGeneration: config.isImageGenerationEndpoint
+    })
+
+    if (!this.localProvider) {
+      throw new Error('Local provider not created')
+    }
+
+    // 根据endpoint类型创建对应的模型
+    let model: AiSdkModel | undefined
+
+    if (config.isImageGenerationEndpoint) {
+      model = this.localProvider.imageModel(modelId)
+    } else {
+      model = this.localProvider.languageModel(modelId)
+
+      // 如果有中间件，应用到语言模型上
+      if (middlewares.length > 0 && typeof model === 'object') {
+        model = wrapLanguageModel({ model, middleware: middlewares })
+      }
+    }
+
+    if (this.actualProvider.id === 'anthropic' && this.actualProvider.authType === 'oauth') {
+      const claudeCodeSystemMessage = buildClaudeCodeSystemMessage(params.system)
+      params.system = undefined // 清除原有system，避免重复
+
+      if (Array.isArray(params.messages)) {
+        params.messages = [...claudeCodeSystemMessage, ...params.messages]
+      } else {
+        params.messages = claudeCodeSystemMessage
+      }
+    }
+
+    // if (config.topicId && getEnableDeveloperMode()) {
+    //   // TypeScript类型窄化：确保topicId是string类型
+    //   const traceConfig = {
+    //     ...config,
+    //     topicId: config.topicId
+    //   }
+    //   return await this._completionsForTrace(model, params, traceConfig)
+    // } else {
+    //   return await this._completionsOrImageGeneration(model, params, config)
+    // }
+
+    return await this._completionsOrImageGeneration(model, params, config)
   }
+
+  private async _completionsOrImageGeneration(
+    model: AiSdkModel,
+    params: StreamTextParams,
+    config: ModernAiProviderConfig
+  ): Promise<CompletionsResult> {
+    if (config.isImageGenerationEndpoint) {
+      // 使用 legacy 实现处理图像生成（支持图片编辑等高级功能）
+      if (!config.uiMessages) {
+        throw new Error('uiMessages is required for image generation endpoint')
+      }
+
+      const legacyParams: CompletionsParams = {
+        callType: 'chat',
+        messages: config.uiMessages, // 使用原始的 UI 消息格式
+        assistant: config.assistant,
+        streamOutput: config.streamOutput ?? true,
+        onChunk: config.onChunk,
+        topicId: config.topicId,
+        mcpTools: config.mcpTools,
+        enableWebSearch: config.enableWebSearch
+      }
+
+      // 调用 legacy 的 completions，会自动使用 ImageGenerationMiddleware
+      return await this.legacyProvider.completions(legacyParams)
+    }
+
+    return await this.modernCompletions(model as LanguageModel, params, config)
+  }
+
+  // /**
+  //  * 带trace支持的completions方法
+  //  * 类似于legacy的completionsForTrace，确保AI SDK spans在正确的trace上下文中
+  //  */
+  // private async _completionsForTrace(
+  //   model: AiSdkModel,
+  //   params: StreamTextParams,
+  //   config: ModernAiProviderConfig & { topicId: string }
+  // ): Promise<CompletionsResult> {
+  //   const modelId = this.model!.id
+  //   const traceName = `${this.actualProvider.name}.${modelId}.${config.callType}`
+  //   const traceParams: StartSpanParams = {
+  //     name: traceName,
+  //     tag: 'LLM',
+  //     topicId: config.topicId,
+  //     modelName: config.assistant.model?.name, // 使用modelId而不是provider名称
+  //     inputs: params
+  //   }
+
+  //   logger.info('Starting AI SDK trace span', {
+  //     traceName,
+  //     topicId: config.topicId,
+  //     modelId,
+  //     hasTools: !!params.tools && Object.keys(params.tools).length > 0,
+  //     toolNames: params.tools ? Object.keys(params.tools) : [],
+  //     isImageGeneration: config.isImageGenerationEndpoint
+  //   })
+
+  //   const span = addSpan(traceParams)
+
+  //   if (!span) {
+  //     logger.warn('Failed to create span, falling back to regular completions', {
+  //       topicId: config.topicId,
+  //       modelId,
+  //       traceName
+  //     })
+  //     return await this._completionsOrImageGeneration(model, params, config)
+  //   }
+
+  //   try {
+  //     logger.info('Created parent span, now calling completions', {
+  //       spanId: span.spanContext().spanId,
+  //       traceId: span.spanContext().traceId,
+  //       topicId: config.topicId,
+  //       modelId,
+  //       parentSpanCreated: true
+  //     })
+
+  //     const result = await this._completionsOrImageGeneration(model, params, config)
+
+  //     logger.info('Completions finished, ending parent span', {
+  //       spanId: span.spanContext().spanId,
+  //       traceId: span.spanContext().traceId,
+  //       topicId: config.topicId,
+  //       modelId,
+  //       resultLength: result.getText().length
+  //     })
+
+  //     // 标记span完成
+  //     endSpan({
+  //       topicId: config.topicId,
+  //       outputs: result,
+  //       span,
+  //       modelName: modelId // 使用modelId保持一致性
+  //     })
+
+  //     return result
+  //   } catch (error) {
+  //     logger.error('Error in completionsForTrace, ending parent span with error', error as Error, {
+  //       spanId: span.spanContext().spanId,
+  //       traceId: span.spanContext().traceId,
+  //       topicId: config.topicId,
+  //       modelId
+  //     })
+
+  //     // 标记span出错
+  //     endSpan({
+  //       topicId: config.topicId,
+  //       error: error as Error,
+  //       span,
+  //       modelName: modelId // 使用modelId保持一致性
+  //     })
+  //     throw error
+  //   }
+  // }
 
   /**
    * 使用现代化AI SDK的completions实现
    */
   private async modernCompletions(
-    modelId: string,
+    model: LanguageModel,
     params: StreamTextParams,
-    middlewareConfig: AiSdkMiddlewareConfig
+    config: ModernAiProviderConfig
   ): Promise<CompletionsResult> {
-    // try {
-    // 根据条件构建插件数组
-    const plugins = buildPlugins(middlewareConfig)
-    console.log('this.config.providerId', this.config.providerId)
-    console.log('this.config.options', this.config.options)
-    console.log('plugins', plugins)
-    // 用构建好的插件数组创建executor
-    const executor = createExecutor(this.config.providerId, this.config.options, plugins)
+    const modelId = this.model!.id
+    logger.info('Starting modernCompletions', {
+      modelId,
+      providerId: this.config!.providerId,
+      topicId: config.topicId,
+      hasOnChunk: !!config.onChunk,
+      hasTools: !!params.tools && Object.keys(params.tools).length > 0,
+      toolCount: params.tools ? Object.keys(params.tools).length : 0
+    })
 
-    // 动态构建中间件数组
-    const middlewares = buildAiSdkMiddlewares(middlewareConfig)
-    // console.log('构建的中间件:', middlewares)
+    // 根据条件构建插件数组
+    const plugins = buildPlugins(config)
+
+    // 用构建好的插件数组创建executor
+    const executor = createExecutor(this.config!.providerId, this.config!.options, plugins)
 
     // 创建带有中间件的执行器
-    if (middlewareConfig.onChunk) {
-      // 流式处理 - 使用适配器
-      const adapter = new AiSdkToChunkAdapter(middlewareConfig.onChunk, middlewareConfig.mcpTools)
-      console.log('最终params', params)
-      const streamResult = await executor.streamText(
-        modelId,
-        params,
-        middlewares.length > 0 ? { middlewares } : undefined
-      )
+    if (config.onChunk) {
+      const accumulate = this.model!.supported_text_delta !== false // true and undefined
+      const adapter = new AiSdkToChunkAdapter(config.onChunk, config.mcpTools, accumulate)
+
+      const streamResult = await executor.streamText({
+        ...params,
+        model,
+        experimental_context: { onChunk: config.onChunk }
+      })
 
       const finalText = await adapter.processStream(streamResult)
 
@@ -107,34 +318,33 @@ export default class ModernAiProvider {
         getText: () => finalText
       }
     } else {
-      // 流式处理但没有 onChunk 回调
-      const streamResult = await executor.streamText(
-        modelId,
-        params,
-        middlewares.length > 0 ? { middlewares } : undefined
-      )
+      const streamResult = await executor.streamText({
+        ...params,
+        model
+      })
+
+      // 强制消费流,不然await streamResult.text会阻塞
+      await streamResult?.consumeStream()
+
       const finalText = await streamResult.text
 
       return {
         getText: () => finalText
       }
     }
-    // }
-    // catch (error) {
-    //   console.error('Modern AI SDK error:', error)
-    //   throw error
-    // }
   }
 
   /**
    * 使用现代化 AI SDK 的图像生成实现，支持流式输出
+   * @deprecated 已改为使用 legacy 实现以支持图片编辑等高级功能
    */
+  /*
   private async modernImageGeneration(
-    modelId: string,
+    model: ImageModel,
     params: StreamTextParams,
-    middlewareConfig: AiSdkMiddlewareConfig
+    config: ModernAiProviderConfig
   ): Promise<CompletionsResult> {
-    const { onChunk } = middlewareConfig
+    const { onChunk } = config
 
     try {
       // 检查 messages 是否存在
@@ -143,8 +353,7 @@ export default class ModernAiProvider {
       }
 
       // 从最后一条用户消息中提取 prompt
-      const lastUserMessage = params.messages.findLast(m => m.role === 'user')
-
+      const lastUserMessage = params.messages.findLast((m) => m.role === 'user')
       if (!lastUserMessage) {
         throw new Error('No user message found for image generation.')
       }
@@ -153,7 +362,7 @@ export default class ModernAiProvider {
       const prompt =
         typeof lastUserMessage.content === 'string'
           ? lastUserMessage.content
-          : lastUserMessage.content?.map(part => ('text' in part ? part.text : '')).join('') || ''
+          : lastUserMessage.content?.map((part) => ('text' in part ? part.text : '')).join('') || ''
 
       if (!prompt) {
         throw new Error('No prompt found in user message.')
@@ -169,13 +378,17 @@ export default class ModernAiProvider {
       // 构建图像生成参数
       const imageParams = {
         prompt,
-        size: isNotSupportedImageSizeModel(middlewareConfig.model) ? undefined : ('1024x1024' as `${number}x${number}`), // 默认尺寸，使用正确的类型
+        size: isNotSupportedImageSizeModel(config.model) ? undefined : ('1024x1024' as `${number}x${number}`), // 默认尺寸，使用正确的类型
         n: 1,
         ...(params.abortSignal && { abortSignal: params.abortSignal })
       }
 
       // 调用新 AI SDK 的图像生成功能
-      const result = await generateImage(this.config.providerId, this.config.options, modelId, imageParams)
+      const executor = createExecutor(this.config!.providerId, this.config!.options, [])
+      const result = await executor.generateImage({
+        model,
+        ...imageParams
+      })
 
       // 转换结果格式
       const images: string[] = []
@@ -239,10 +452,10 @@ export default class ModernAiProvider {
       if (onChunk) {
         onChunk({ type: ChunkType.ERROR, error: error as any })
       }
-
       throw error
     }
   }
+  */
 
   // 代理其他方法到原有实现
   public async models() {
@@ -257,10 +470,19 @@ export default class ModernAiProvider {
     // 如果支持新的 AI SDK，使用现代化实现
     if (isModernSdkSupported(this.actualProvider)) {
       try {
+        // 确保本地provider已创建
+        if (!this.localProvider) {
+          this.localProvider = await createAiSdkProvider(this.config)
+
+          if (!this.localProvider) {
+            throw new Error('Local provider not created')
+          }
+        }
+
         const result = await this.modernGenerateImage(params)
         return result
       } catch (error) {
-        console.warn('Modern AI SDK generateImage failed, falling back to legacy:', error)
+        logger.warn('Modern AI SDK generateImage failed, falling back to legacy:', error as Error)
         // fallback 到传统实现
         return this.legacyProvider.generateImage(params)
       }
@@ -284,7 +506,11 @@ export default class ModernAiProvider {
       ...(signal && { abortSignal: signal })
     }
 
-    const result = await generateImage(this.config.providerId, this.config.options, model, aiSdkParams)
+    const executor = createExecutor(this.config!.providerId, this.config!.options, [])
+    const result = await executor.generateImage({
+      model: this.localProvider?.imageModel(model) as ImageModel,
+      ...aiSdkParams
+    })
 
     // 转换结果格式
     const images: string[] = []

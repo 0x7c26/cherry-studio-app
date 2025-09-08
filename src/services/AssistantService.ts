@@ -1,5 +1,11 @@
-import { SYSTEM_PROVIDERS } from '@/config/providers'
-import { DEFAULT_CONTEXTCOUNT, DEFAULT_MAX_TOKENS, DEFAULT_TEMPERATURE } from '@/constants'
+import { SYSTEM_MODELS } from '@/config/models/default'
+import {
+  DEFAULT_CONTEXTCOUNT,
+  DEFAULT_MAX_TOKENS,
+  DEFAULT_TEMPERATURE,
+  MAX_CONTEXT_COUNT,
+  UNLIMITED_CONTEXT_COUNT
+} from '@/constants'
 import i18n from '@/i18n'
 import { loggerService } from '@/services/LoggerService'
 import { Assistant, AssistantSettings, Topic } from '@/types/assistant'
@@ -42,7 +48,7 @@ export function getDefaultTopic(assistantId: string): Topic {
 
 export function getDefaultModel() {
   // todo
-  return SYSTEM_PROVIDERS[0].models[0]
+  return SYSTEM_MODELS.cherryin[0]
 }
 
 export const getAssistantSettings = (assistant: Assistant): AssistantSettings => {
@@ -63,14 +69,17 @@ export const getAssistantSettings = (assistant: Assistant): AssistantSettings =>
   }
 
   return {
-    contextCount: contextCount === 100 ? 100000 : contextCount,
+    contextCount: contextCount === MAX_CONTEXT_COUNT ? UNLIMITED_CONTEXT_COUNT : contextCount,
     temperature: assistant?.settings?.temperature ?? DEFAULT_TEMPERATURE,
+    enableTemperature: assistant?.settings?.enableTemperature ?? true,
     topP: assistant?.settings?.topP ?? 1,
+    enableTopP: assistant?.settings?.enableTopP ?? true,
     enableMaxTokens: assistant?.settings?.enableMaxTokens ?? false,
     maxTokens: getAssistantMaxTokens(),
     streamOutput: assistant?.settings?.streamOutput ?? true,
     toolUseMode: assistant?.settings?.toolUseMode ?? 'prompt',
     defaultModel: assistant?.defaultModel ?? undefined,
+    reasoning_effort: assistant?.settings?.reasoning_effort ?? undefined,
     customParameters: assistant?.settings?.customParameters ?? []
   }
 }

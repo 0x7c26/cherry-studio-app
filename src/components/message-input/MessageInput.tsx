@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next'
 import { Keyboard } from 'react-native'
 import { styled, TextArea, XStack, YStack } from 'tamagui'
 
-import { isReasoningModel } from '@/config/models/reasoning'
+import { isReasoningModel } from '@/config/models'
 import { useAssistant } from '@/hooks/useAssistant'
 import { useMessageOperations, useTopicLoading } from '@/hooks/useMessageOperation'
 import { useTheme } from '@/hooks/useTheme'
@@ -16,7 +16,7 @@ import { sendMessage as _sendMessage } from '@/services/MessagesService'
 import { getUserMessage } from '@/services/MessagesService'
 import { useAppDispatch } from '@/store'
 import { Model, Topic } from '@/types/assistant'
-import { FileType } from '@/types/file'
+import { FileMetadata } from '@/types/file'
 import { MessageInputBaseParams } from '@/types/message'
 import { haptic } from '@/utils/haptic'
 
@@ -40,7 +40,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({ topic }) => {
   const { assistant, isLoading, updateAssistant } = useAssistant(topic.assistantId)
 
   const [text, setText] = useState('')
-  const [files, setFiles] = useState<FileType[]>([])
+  const [files, setFiles] = useState<FileMetadata[]>([])
   const [mentions, setMentions] = useState<Model[]>([])
   const isTopicLoading = useTopicLoading(topic)
   const { pauseMessages } = useMessageOperations(topic)
@@ -121,13 +121,13 @@ export const MessageInput: React.FC<MessageInputProps> = ({ topic }) => {
             <TextArea
               placeholder={t('inputs.placeholder')}
               borderWidth={0}
-              backgroundColor="$colorTransparent"
+              backgroundColor="$backgroundPrimary"
               p={0}
               flex={1}
               value={text}
               onChangeText={setText}
               lineHeight={22}
-              color="$textSecondaryLight"
+              color="$textSecondary"
             />
           </XStack>
           {/* button */}

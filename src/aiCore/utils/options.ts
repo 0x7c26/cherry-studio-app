@@ -1,4 +1,17 @@
-import { Assistant, Model, Provider } from '@/types/assistant'
+import { baseProviderIdSchema, customProviderIdSchema } from '@cherrystudio/ai-core/provider'
+
+import { isOpenAIModel, isSupportFlexServiceTierModel } from '@/config/models'
+import { isSupportServiceTierProvider } from '@/config/providers'
+import {
+  Assistant,
+  GroqServiceTiers,
+  isGroqServiceTier,
+  isOpenAIServiceTier,
+  Model,
+  OpenAIServiceTiers,
+  Provider,
+  SystemProviderIds
+} from '@/types/assistant'
 
 import { getAiSdkProviderId } from '../provider/factory'
 import { buildGeminiGenerateImageParams } from './image'
@@ -11,6 +24,35 @@ import {
   getXAIReasoningParams
 } from './reasoning'
 import { getWebSearchParams } from './websearch'
+
+// copy from BaseApiClient.ts
+const getServiceTier = (model: Model, provider: Provider) => {
+  const serviceTierSetting = provider.serviceTier
+
+  if (!isSupportServiceTierProvider(provider) || !isOpenAIModel(model) || !serviceTierSetting) {
+    return undefined
+  }
+
+  // 处理不同供应商需要 fallback 到默认值的情况
+  if (provider.id === SystemProviderIds.groq) {
+    if (
+      !isGroqServiceTier(serviceTierSetting) ||
+      (serviceTierSetting === GroqServiceTiers.flex && !isSupportFlexServiceTierModel(model))
+    ) {
+      return undefined
+    }
+  } else {
+    // 其他 OpenAI 供应商，假设他们的服务层级设置和 OpenAI 完全相同
+    if (
+      !isOpenAIServiceTier(serviceTierSetting) ||
+      (serviceTierSetting === OpenAIServiceTiers.flex && !isSupportFlexServiceTierModel(model))
+    ) {
+      return undefined
+    }
+  }
+
+  return serviceTierSetting
+}
 
 /**
  * 构建 AI SDK 的 providerOptions
@@ -27,39 +69,67 @@ export function buildProviderOptions(
     enableGenerateImage: boolean
   }
 ): Record<string, any> {
-  const providerId = getAiSdkProviderId(actualProvider)
-
+  const rawProviderId = getAiSdkProviderId(actualProvider)
   // 构建 provider 特定的选项
   let providerSpecificOptions: Record<string, any> = {}
-
+  const serviceTierSetting = getServiceTier(model, actualProvider)
+  providerSpecificOptions.serviceTier = serviceTierSetting
   // 根据 provider 类型分离构建逻辑
-  switch (providerId) {
-    case 'openai':
-    case 'azure':
-      providerSpecificOptions = {
-        ...buildOpenAIProviderOptions(assistant, model, capabilities),
-        // 函数内有对于真实provider.id的判断,应该不会影响原生provider
-        ...buildGenericProviderOptions(assistant, model, capabilities)
+  const { data: baseProviderId, success } = baseProviderIdSchema.safeParse(rawProviderId)
+
+  if (success) {
+    // 应该覆盖所有类型
+    switch (baseProviderId) {
+      case 'openai':
+      case 'azure':
+        providerSpecificOptions = {
+          ...buildOpenAIProviderOptions(assistant, model, capabilities),
+          serviceTier: serviceTierSetting
+        }
+        break
+
+      case 'anthropic':
+        providerSpecificOptions = buildAnthropicProviderOptions(assistant, model, capabilities)
+        break
+
+      case 'google':
+        providerSpecificOptions = buildGeminiProviderOptions(assistant, model, capabilities)
+        break
+
+      case 'xai':
+        providerSpecificOptions = buildXAIProviderOptions(assistant, model, capabilities)
+        break
+      case 'deepseek':
+      case 'openai-compatible':
+        // 对于其他 provider，使用通用的构建逻辑
+        providerSpecificOptions = {
+          ...buildGenericProviderOptions(assistant, model, capabilities),
+          serviceTier: serviceTierSetting
+        }
+        break
+      default:
+        throw new Error(`Unsupported base provider ${baseProviderId}`)
+    }
+  } else {
+    // 处理自定义 provider
+    const { data: providerId, success, error } = customProviderIdSchema.safeParse(rawProviderId)
+
+    if (success) {
+      switch (providerId) {
+        // 非 base provider 的单独处理逻辑
+        case 'google-vertex':
+          providerSpecificOptions = buildGeminiProviderOptions(assistant, model, capabilities)
+          break
+        default:
+          // 对于其他 provider，使用通用的构建逻辑
+          providerSpecificOptions = {
+            ...buildGenericProviderOptions(assistant, model, capabilities),
+            serviceTier: serviceTierSetting
+          }
       }
-
-      break
-
-    case 'anthropic':
-      providerSpecificOptions = buildAnthropicProviderOptions(assistant, model, capabilities)
-      break
-
-    case 'google':
-      providerSpecificOptions = buildGeminiProviderOptions(assistant, model, capabilities)
-      break
-
-    case 'xai':
-      providerSpecificOptions = buildXAIProviderOptions(assistant, model, capabilities)
-      break
-
-    default:
-      // 对于其他 provider，使用通用的构建逻辑
-      providerSpecificOptions = buildGenericProviderOptions(assistant, model, capabilities)
-      break
+    } else {
+      throw error
+    }
   }
 
   // 合并自定义参数到 provider 特定的选项中
@@ -70,7 +140,7 @@ export function buildProviderOptions(
 
   // 返回 AI Core SDK 要求的格式：{ 'providerId': providerOptions }
   return {
-    [providerId]: providerSpecificOptions
+    [rawProviderId]: providerSpecificOptions
   }
 }
 
@@ -213,6 +283,25 @@ function buildGenericProviderOptions(
       ...webSearchParams
     }
   }
+
+  // 特殊处理 Qwen MT
+  // if (isQwenMTModel(model)) {
+  //   if (isTranslateAssistant(assistant)) {
+  //     const targetLanguage = assistant.targetLanguage
+  //     const translationOptions = {
+  //       source_lang: 'auto',
+  //       target_lang: mapLanguageToQwenMTModel(targetLanguage)
+  //     } as const
+
+  //     if (!translationOptions.target_lang) {
+  //       throw new Error(t('translate.error.not_supported', { language: targetLanguage.value }))
+  //     }
+
+  //     providerOptions.translation_options = translationOptions
+  //   } else {
+  //     throw new Error(t('translate.error.chat_qwen_mt'))
+  //   }
+  // }
 
   return providerOptions
 }

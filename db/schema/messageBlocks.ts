@@ -17,7 +17,7 @@ export const messageBlocks = sqliteTable(
     content: text('content'), // Main content for text, code, thinking blocks
     language: text('language'), // For code blocks
     url: text('url'), // For image blocks
-    file: text('file'), // FileType object as JSON for image/file blocks
+    file: text('file'), // FileMetadata object as JSON for image/file blocks
 
     // Tool block specific fields
     tool_id: text('tool_id'), // For tool blocks

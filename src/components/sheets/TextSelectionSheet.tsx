@@ -1,51 +1,91 @@
 import { BottomSheetBackdrop, BottomSheetModal, BottomSheetScrollView } from '@gorhom/bottom-sheet'
-import React, { forwardRef, useEffect } from 'react'
-import { BackHandler, Platform } from 'react-native'
-import { Text, useTheme } from 'tamagui'
+import { X } from '@tamagui/lucide-icons'
+import React, { forwardRef, useImperativeHandle, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
+import { Platform, TextInput, TouchableOpacity } from 'react-native'
+import { Text, XStack, YStack } from 'tamagui'
+
+import { useTheme } from '@/hooks/useTheme'
 
 interface TextSelectionSheetProps {
   content: string
 }
 
-const TextSelectionSheet = forwardRef<BottomSheetModal, TextSelectionSheetProps>(({ content }, ref) => {
-  const theme = useTheme()
+export interface TextSelectionSheetRef {
+  present: () => void
+  dismiss: () => void
+}
+
+// TODO: 自定义选择后弹出的菜单
+function SelectableText({ children }) {
+  if (Platform.OS === 'ios') {
+    return (
+      <TextInput multiline editable={false} style={{ fontSize: 15, lineHeight: 24 }} scrollEnabled={false}>
+        {children}
+      </TextInput>
+    )
+  } else {
+    return (
+      <Text userSelect="all" fontSize={15} lineHeight={24}>
+        {children}
+      </Text>
+    )
+  }
+}
+
+const TextSelectionSheet = forwardRef<TextSelectionSheetRef, TextSelectionSheetProps>(({ content }, ref) => {
+  const { t } = useTranslation()
+  const { isDark } = useTheme()
+  const bottomSheetModalRef = useRef<BottomSheetModal>(null)
+
+  useImperativeHandle(ref, () => ({
+    present: () => bottomSheetModalRef.current?.present(),
+    dismiss: () => bottomSheetModalRef.current?.dismiss()
+  }))
 
   const renderBackdrop = (props: any) => (
     <BottomSheetBackdrop {...props} appearsOnIndex={0} disappearsOnIndex={-1} opacity={0.5} pressBehavior="close" />
   )
 
-  useEffect(() => {
-    if (Platform.OS !== 'android') return
-
-    const backAction = () => {
-      if ((ref as React.RefObject<BottomSheetModal>)?.current) {
-        ;(ref as React.RefObject<BottomSheetModal>)?.current?.dismiss()
-        return true
-      }
-
-      return false
-    }
-
-    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction)
-    return () => backHandler.remove()
-  }, [ref])
-
   return (
     <BottomSheetModal
-      snapPoints={['80%']}
-      ref={ref}
+      ref={bottomSheetModalRef}
+      snapPoints={['90%']}
       enableDynamicSizing={false}
+      backgroundStyle={{
+        borderRadius: 24,
+        backgroundColor: isDark ? '#121213ff' : '#f7f7f7ff'
+      }}
       handleIndicatorStyle={{
-        backgroundColor: theme.color.val
+        backgroundColor: isDark ? '#f9f9f9ff' : '#202020ff'
       }}
       backdropComponent={renderBackdrop}>
-      <BottomSheetScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 20, paddingVertical: 10, paddingBottom: 20 }}>
-        <Text fontSize={16} color="$textPrimary" lineHeight={24} selectable={true} textBreakStrategy="balanced">
-          {content}
-        </Text>
-      </BottomSheetScrollView>
+      <YStack flex={1}>
+        <XStack
+          justifyContent="space-between"
+          alignItems="center"
+          paddingHorizontal={16}
+          paddingBottom={16}
+          borderBottomWidth={1}
+          borderBottomColor="$borderColor">
+          <Text fontSize={16} fontWeight="bold">
+            {t('common.select_text')}
+          </Text>
+          <TouchableOpacity
+            onPress={() => bottomSheetModalRef.current?.dismiss()}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <X size={20} />
+          </TouchableOpacity>
+        </XStack>
+        <BottomSheetScrollView
+          contentContainerStyle={{
+            paddingHorizontal: 20,
+            paddingBottom: 40,
+            paddingTop: 10
+          }}>
+          <SelectableText>{content}</SelectableText>
+        </BottomSheetScrollView>
+      </YStack>
     </BottomSheetModal>
   )
 })

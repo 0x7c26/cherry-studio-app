@@ -1,6 +1,8 @@
 import React from 'react'
+import { Dimensions } from 'react-native'
 import { Text, View, XStack, YStack } from 'tamagui'
 
+import { useTheme } from '@/hooks/useTheme'
 import { Assistant } from '@/types/assistant'
 
 import EmojiAvatar from './EmojiAvator'
@@ -12,19 +14,39 @@ interface AssistantItemCardProps {
 }
 
 const AssistantItemCard = ({ assistant, onAssistantPress }: AssistantItemCardProps) => {
+  const { isDark } = useTheme()
+
+  // 计算卡片宽度和高度
+  const screenWidth = Dimensions.get('window').width
+  const horizontalPadding = 20 // 左右各10px的padding
+  const columnGap = 8 // 列间距
+  const cardWidth = (screenWidth - horizontalPadding * 2 - columnGap) / 2
+  const cardHeight = cardWidth / 0.78 // 宽高比为0.78
+
   const handlePress = () => {
     onAssistantPress(assistant)
   }
 
   return (
-    <View backgroundColor="$uiCardBackground" padding={14} width={148} borderRadius={16} onPress={handlePress}>
+    <View
+      backgroundColor="$uiCardBackground"
+      padding={14}
+      width={cardWidth}
+      height={cardHeight}
+      borderRadius={16}
+      onPress={handlePress}>
       <YStack gap={8} alignItems="center" height="100%">
-        <EmojiAvatar emoji={assistant.emoji} size={70} borderWidth={5} />
-        <Text textAlign="center" numberOfLines={1} ellipsizeMode="tail">
+        <EmojiAvatar
+          emoji={assistant.emoji}
+          size={cardWidth / 2}
+          borderWidth={5}
+          borderColor={isDark ? '#333333' : '$backgroundPrimary'}
+        />
+        <Text fontSize={16} textAlign="center" numberOfLines={1} ellipsizeMode="tail">
           {assistant.name}
         </Text>
         <View height={40}>
-          <Text color="$gray9" fontSize={10} lineHeight={12} numberOfLines={3} ellipsizeMode="tail">
+          <Text color="$textSecondary" fontSize={12} lineHeight={12} numberOfLines={3} ellipsizeMode="tail">
             {assistant.description}
           </Text>
         </View>

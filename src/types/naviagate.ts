@@ -27,14 +27,19 @@ export type AppDrawerParamList = {
   Home:
     | { screen: 'ChatScreen'; params: { topicId: string } }
     | { screen: 'TopicScreen' }
-    | { screen: 'AssistantDetailScreen'; params: { assistantId: string; tab?: string } }
+    | { screen: 'SettingsScreen' }
+    | { screen: 'GeneralSettings'; params?: any }
+    | { screen: 'AssistantSettings'; params?: any }
+    | { screen: 'ProvidersSettings'; params?: any }
+    | { screen: 'DataSourcesSettings'; params?: any }
+    | { screen: 'WebSearchSettings'; params?: any }
+    | { screen: 'AboutSettings'; params?: any }
     | undefined
   Assistant:
     | { screen: 'AssistantScreen' }
     | { screen: 'AssistantMarketScreen' }
     | { screen: 'AssistantDetailScreen'; params: { assistantId: string; tab?: string } }
     | undefined
-  Settings: { screen?: string; params?: any } | undefined
 }
 
 // Navigation Props

@@ -4,7 +4,7 @@ import React, { forwardRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Alert, BackHandler } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Button, Stack, Text, useTheme, View, XStack, YStack } from 'tamagui'
+import { Button, Stack, Text, View, XStack, YStack } from 'tamagui'
 
 import { UnionPlusIcon } from '@/components/icons/UnionPlusIcon'
 import { SettingDivider } from '@/components/settings'
@@ -32,7 +32,6 @@ interface AssistantItemSheetProps {
 const AssistantItemSheet = forwardRef<BottomSheetModal, AssistantItemSheetProps>(
   ({ assistant, source, onEdit, onChatNavigation, actionButton }, ref) => {
     const { t } = useTranslation()
-    const theme = useTheme()
     const { isDark } = useCustomTheme()
     const { bottom } = useSafeAreaInsets()
 
@@ -111,7 +110,7 @@ const AssistantItemSheet = forwardRef<BottomSheetModal, AssistantItemSheetProps>
           backgroundColor: isDark ? '#121213ff' : '#f7f7f7ff'
         }}
         handleIndicatorStyle={{
-          backgroundColor: theme.color.val
+          backgroundColor: isDark ? '#f9f9f9ff' : '#202020ff'
         }}
         backdropComponent={renderBackdrop}>
         <YStack flex={1} gap={17}>
@@ -120,7 +119,12 @@ const AssistantItemSheet = forwardRef<BottomSheetModal, AssistantItemSheetProps>
             {/* Header with emoji and groups */}
             <YStack justifyContent="center" alignItems="center" gap={20}>
               <View marginTop={20}>
-                <EmojiAvatar emoji={assistant.emoji} size={120} borderWidth={5} borderColor="$uiCardBackground" />
+                <EmojiAvatar
+                  emoji={assistant.emoji}
+                  size={120}
+                  borderWidth={5}
+                  borderColor={isDark ? '#333333' : '$uiCardBackground'}
+                />
               </View>
               <Text fontSize={22} fontWeight="bold" textAlign="center">
                 {assistant.name}

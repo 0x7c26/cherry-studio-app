@@ -2,12 +2,12 @@ import { BottomSheetBackdrop, BottomSheetModal, BottomSheetView } from '@gorhom/
 import { Trash2 } from '@tamagui/lucide-icons'
 import React, { forwardRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { BackHandler } from 'react-native'
-import { Button, useTheme, YStack } from 'tamagui'
+import { BackHandler, TouchableOpacity } from 'react-native'
+import { Button, Text, XStack, YStack } from 'tamagui'
 
 import { TranslatedIcon, TranslationIcon } from '@/components/icons/TranslationIcon'
 import { useMessageActions } from '@/hooks/useMessageActions'
-import { useTheme as useCustomTheme } from '@/hooks/useTheme'
+import { useTheme } from '@/hooks/useTheme'
 import { Message } from '@/types/message'
 
 interface MessageFooterMoreProps {
@@ -16,8 +16,8 @@ interface MessageFooterMoreProps {
 
 const MessageFooterMoreSheet = forwardRef<BottomSheetModal, MessageFooterMoreProps>(({ message }, ref) => {
   const { t } = useTranslation()
-  const theme = useTheme()
-  const { isDark } = useCustomTheme()
+
+  const { isDark } = useTheme()
   const { isTranslated, handleTranslate, handleDeleteTranslation, handleDelete } = useMessageActions({ message })
 
   const renderBackdrop = (props: any) => (
@@ -57,33 +57,46 @@ const MessageFooterMoreSheet = forwardRef<BottomSheetModal, MessageFooterMorePro
 
   return (
     <BottomSheetModal
-      snapPoints={['20%']}
       ref={ref}
       enableDynamicSizing={true}
       backgroundStyle={{
-        borderRadius: 30,
+        borderRadius: 24,
         backgroundColor: isDark ? '#121213ff' : '#f7f7f7ff'
       }}
       handleIndicatorStyle={{
-        backgroundColor: theme.color.val
+        backgroundColor: isDark ? '#f9f9f9ff' : '#202020ff'
       }}
       backdropComponent={renderBackdrop}>
       <BottomSheetView>
-        <YStack alignItems="center" paddingTop={10} paddingBottom={30} paddingHorizontal={20} gap={10}>
-          <YStack width="100%" gap={10}>
-            <Button
-              onPress={isTranslated ? onDeleteTranslation : onTranslate}
-              icon={isTranslated ? <TranslatedIcon size={18} /> : <TranslationIcon size={18} />}
-              justifyContent="flex-start">
-              {isTranslated ? t('message.delete_translation') : t('message.translate_message')}
-            </Button>
-            {/*<Button icon={<FolderDown size={18} />} justifyContent="flex-start">*/}
-            {/*  {t('export.title')}*/}
-            {/*</Button>*/}
-            <Button onPress={onDelete} icon={<Trash2 size={18} />} color="red" justifyContent="flex-start">
-              {t('message.delete_message')}
-            </Button>
-          </YStack>
+        <YStack width="100%" paddingTop={0} paddingBottom={30} paddingHorizontal={16} gap={10}>
+          <TouchableOpacity onPress={isTranslated ? onDeleteTranslation : onTranslate} activeOpacity={0.7}>
+            <XStack
+              width="100%"
+              alignItems="center"
+              gap={10}
+              paddingHorizontal={20}
+              paddingVertical={16}
+              borderRadius={16}
+              backgroundColor="$uiCardBackground">
+              {isTranslated ? <TranslatedIcon size={18} /> : <TranslationIcon size={18} />}
+              <Text fontSize={16}>
+                {isTranslated ? t('message.delete_translation') : t('message.translate_message')}
+              </Text>
+            </XStack>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={onDelete} activeOpacity={0.7}>
+            <XStack
+              width="100%"
+              alignItems="center"
+              gap={10}
+              paddingHorizontal={20}
+              paddingVertical={16}
+              borderRadius={16}
+              backgroundColor="$uiCardBackground">
+              <Trash2 size={18} color="red" />
+              <Text fontSize={16} color="red">{t('message.delete_message')}</Text>
+            </XStack>
+          </TouchableOpacity>
         </YStack>
       </BottomSheetView>
     </BottomSheetModal>

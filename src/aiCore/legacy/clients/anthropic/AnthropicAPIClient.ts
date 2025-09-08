@@ -1,17 +1,21 @@
 import Anthropic from '@anthropic-ai/sdk'
-import { MessageParam, TextBlockParam, ToolUseBlock, WebSearchTool20250305 } from '@anthropic-ai/sdk/resources'
 import {
   Base64ImageSource,
+  ImageBlockParam,
+  MessageParam,
+  TextBlockParam,
+  ToolResultBlockParam,
+  ToolUseBlock,
+  WebSearchTool20250305
+} from '@anthropic-ai/sdk/resources'
+import {
   ContentBlock,
   ContentBlockParam,
-  ImageBlockParam,
-  MessageCreateParams,
   MessageCreateParamsBase,
   RedactedThinkingBlockParam,
   ServerToolUseBlockParam,
   ThinkingBlockParam,
   ThinkingConfigParam,
-  ToolResultBlockParam,
   ToolUnion,
   ToolUseBlockParam,
   WebSearchResultBlock,
@@ -19,16 +23,15 @@ import {
   WebSearchToolResultError
 } from '@anthropic-ai/sdk/resources/messages'
 import { MessageStream } from '@anthropic-ai/sdk/resources/messages/messages'
-import { File } from 'expo-file-system/next'
+import { File, Paths } from 'expo-file-system/next'
+import { t } from 'i18next'
 
-import { findTokenLimit } from '@/config/models'
-import { EFFORT_RATIO, isClaudeReasoningModel, isReasoningModel } from '@/config/models/reasoning'
-import { isWebSearchModel } from '@/config/models/webSearch'
+import { findTokenLimit, isClaudeReasoningModel, isReasoningModel, isWebSearchModel } from '@/config/models'
 import { DEFAULT_MAX_TOKENS } from '@/constants'
 import { getAssistantSettings } from '@/services/AssistantService'
 import { loggerService } from '@/services/LoggerService'
 import { estimateTextTokens } from '@/services/TokenService'
-import { Assistant, Model, Provider } from '@/types/assistant'
+import { Assistant, EFFORT_RATIO, Model, Provider } from '@/types/assistant'
 import {
   ChunkType,
   ErrorChunk,
@@ -42,19 +45,18 @@ import {
 } from '@/types/chunk'
 import { FileTypes } from '@/types/file'
 import { MCPCallToolResponse, MCPToolResponse, ToolCallResponse } from '@/types/mcp'
-import type { Message } from '@/types/message'
+import { type Message } from '@/types/message'
 import { AnthropicSdkMessageParam, AnthropicSdkParams, AnthropicSdkRawChunk, AnthropicSdkRawOutput } from '@/types/sdk'
 import { MCPTool } from '@/types/tool'
 import { WebSearchSource } from '@/types/websearch'
 import { addImageFileToContents } from '@/utils/formats'
 import {
   anthropicToolUseToMcpTool,
-  isEnabledToolUse,
+  isSupportedToolUse,
   mcpToolCallResponseToAnthropicMessage,
   mcpToolsToAnthropicTools
 } from '@/utils/mcpTool'
 import { findFileBlocks, findImageBlocks } from '@/utils/messageUtils/find'
-import { buildSystemPrompt } from '@/utils/prompt'
 
 import { GenericChunk } from '../../middleware/schemas'
 import { BaseApiClient } from '../BaseApiClient'
@@ -71,6 +73,9 @@ export class AnthropicAPIClient extends BaseApiClient<
   ToolUseBlock,
   ToolUnion
 > {
+  oauthToken: string | undefined = undefined
+  isOAuthMode: boolean = false
+  sdkInstance: Anthropic | undefined = undefined
   constructor(provider: Provider) {
     super(provider)
   }
@@ -80,23 +85,85 @@ export class AnthropicAPIClient extends BaseApiClient<
       return this.sdkInstance
     }
 
-    this.sdkInstance = new Anthropic({
-      apiKey: this.apiKey,
-      baseURL: this.getBaseURL(),
-      dangerouslyAllowBrowser: true,
-      defaultHeaders: {
-        'anthropic-beta': 'output-128k-2025-02-19',
-        ...this.provider.extra_headers
+    if (this.provider.authType === 'oauth') {
+      if (!this.oauthToken) {
+        throw new Error('OAuth token is not available')
       }
-    })
+
+      this.sdkInstance = new Anthropic({
+        authToken: this.oauthToken,
+        baseURL: 'https://api.anthropic.com',
+        dangerouslyAllowBrowser: true,
+        defaultHeaders: {
+          'Content-Type': 'application/json',
+          'anthropic-version': '2023-06-01',
+          'anthropic-beta': 'oauth-2025-04-20'
+          // ...this.provider.extra_headers
+        }
+      })
+    } else {
+      this.sdkInstance = new Anthropic({
+        apiKey: this.apiKey,
+        baseURL: this.getBaseURL(),
+        dangerouslyAllowBrowser: true,
+        defaultHeaders: {
+          'anthropic-beta': 'output-128k-2025-02-19',
+          ...this.provider.extra_headers
+        }
+      })
+    }
+
     return this.sdkInstance
+  }
+
+  private buildClaudeCodeSystemMessage(system?: string | TextBlockParam[]): string | TextBlockParam[] {
+    const defaultClaudeCodeSystem = `You are Claude Code, Anthropic's official CLI for Claude.`
+
+    if (!system) {
+      return defaultClaudeCodeSystem
+    }
+
+    if (typeof system === 'string') {
+      if (system.trim() === defaultClaudeCodeSystem) {
+        return system
+      }
+
+      return [
+        {
+          type: 'text',
+          text: defaultClaudeCodeSystem
+        },
+        {
+          type: 'text',
+          text: system
+        }
+      ]
+    }
+
+    if (system[0].text.trim() != defaultClaudeCodeSystem) {
+      system.unshift({
+        type: 'text',
+        text: defaultClaudeCodeSystem
+      })
+    }
+
+    return system
   }
 
   override async createCompletions(
     payload: AnthropicSdkParams,
     options?: Anthropic.RequestOptions
   ): Promise<AnthropicSdkRawOutput> {
-    const sdk = await this.getSdkInstance()
+    if (this.provider.authType === 'oauth') {
+      // this.oauthToken = await window.api.anthropic_oauth.getAccessToken()
+      // this.isOAuthMode = true
+      // logger.info('[Anthropic Provider] Using OAuth token for authentication')
+      // payload.system = this.buildClaudeCodeSystemMessage(payload.system)
+      logger.error('Anthropic OAuth token is not available')
+      throw new Error('Anthropic OAuth token is not available')
+    }
+
+    const sdk = (await this.getSdkInstance()) as Anthropic
 
     if (payload.stream) {
       return sdk.messages.stream(payload, options)
@@ -112,8 +179,18 @@ export class AnthropicAPIClient extends BaseApiClient<
   }
 
   override async listModels(): Promise<Anthropic.ModelInfo[]> {
-    const sdk = await this.getSdkInstance()
+    if (this.provider.authType === 'oauth') {
+      // this.oauthToken = await window.api.anthropic_oauth.getAccessToken()
+      // this.isOAuthMode = true
+      // logger.info('[Anthropic Provider] Using OAuth token for authentication')
+      //
+      logger.error('Anthropic OAuth token is not available')
+      throw new Error('Anthropic OAuth token is not available')
+    }
+
+    const sdk = (await this.getSdkInstance()) as Anthropic
     const response = await sdk.models.list()
+
     return response.data
   }
 
@@ -127,7 +204,7 @@ export class AnthropicAPIClient extends BaseApiClient<
       return undefined
     }
 
-    return assistant.settings?.temperature
+    return super.getTemperature(assistant, model)
   }
 
   override getTopP(assistant: Assistant, model: Model): number | undefined {
@@ -135,7 +212,7 @@ export class AnthropicAPIClient extends BaseApiClient<
       return undefined
     }
 
-    return assistant.settings?.topP
+    return super.getTopP(assistant, model)
   }
 
   /**
@@ -178,33 +255,63 @@ export class AnthropicAPIClient extends BaseApiClient<
     }
   }
 
+  private static isValidBase64ImageMediaType(mime: string): mime is Base64ImageSource['media_type'] {
+    return ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(mime)
+  }
+
   /**
    * Get the message parameter
    * @param message - The message
-   * @param model - The model
    * @returns The message parameter
    */
   public async convertMessageToSdkParam(message: Message): Promise<AnthropicSdkMessageParam> {
+    const { textContent, imageContents } = await this.getMessageContent(message)
+
     const parts: MessageParam['content'] = [
       {
         type: 'text',
-        text: await this.getMessageContent(message)
+        text: textContent
       }
     ]
+
+    if (imageContents.length > 0) {
+      for (const imageContent of imageContents) {
+        const image = new File(Paths.join(Paths.cache, 'Files', imageContent.fileId + imageContent.fileExt))
+
+        if (!image.type) {
+          logger.warn('Image type not found', { fileId: imageContent.fileId })
+          throw new Error('Image type not found')
+        }
+
+        image.type = image.type.replace('jpg', 'jpeg')
+
+        if (AnthropicAPIClient.isValidBase64ImageMediaType(image.type)) {
+          parts.push({
+            type: 'image',
+            source: {
+              data: image.base64(),
+              media_type: image.type,
+              type: 'base64'
+            }
+          })
+        } else {
+          logger.warn('Unsupported image type, ignored.', { mime: image.type })
+        }
+      }
+    }
 
     // Get and process image blocks
     const imageBlocks = await findImageBlocks(message)
 
     for (const imageBlock of imageBlocks) {
       if (imageBlock.file) {
-        // Handle uploaded file
-        const file = imageBlock.file
-        const image = new File(file.path)
+        const image = new File(imageBlock.file.path)
+
         parts.push({
           type: 'image',
           source: {
             data: image.base64(),
-            media_type: image.type || ('image/png' as any),
+            media_type: image.type?.replace('jpg', 'jpeg') as any,
             type: 'base64'
           }
         })
@@ -219,16 +326,15 @@ export class AnthropicAPIClient extends BaseApiClient<
 
       if ([FileTypes.TEXT, FileTypes.DOCUMENT].includes(file.type)) {
         if (file.ext === '.pdf' && file.size < 32 * 1024 * 1024) {
-          throw new Error('pdf not implement')
-          // const base64Data = await FileManager.readBase64File(file)
-          // parts.push({
-          //   type: 'document',
-          //   source: {
-          //     type: 'base64',
-          //     media_type: 'application/pdf',
-          //     data: base64Data
-          //   }
-          // })
+          const base64Data = new File(file.path).base64()
+          parts.push({
+            type: 'document',
+            source: {
+              type: 'base64',
+              media_type: 'application/pdf',
+              data: base64Data
+            }
+          })
         } else {
           const fileContent = new File(file.path).text().trim()
           parts.push({
@@ -381,13 +487,13 @@ export class AnthropicAPIClient extends BaseApiClient<
     rawOutput: AnthropicSdkRawOutput,
     listener: RawStreamListener<AnthropicSdkRawChunk>
   ): AnthropicSdkRawOutput {
-    logger.info('附加流监听器到原始输出')
+    logger.debug(`Attaching stream listener to raw output`)
     // 专用的Anthropic事件处理
     const anthropicListener = listener as AnthropicStreamListener
 
     // 检查是否为MessageStream
     if (rawOutput instanceof MessageStream) {
-      logger.info('检测到 Anthropic MessageStream，附加专用监听器')
+      logger.debug(`Detected Anthropic MessageStream, attaching specialized listener`)
 
       if (listener.onStart) {
         listener.onStart()
@@ -457,18 +563,14 @@ export class AnthropicAPIClient extends BaseApiClient<
       }> => {
         const { messages, mcpTools, maxTokens, streamOutput, enableWebSearch } = coreRequest
         // 1. 处理系统消息
-        let systemPrompt = assistant.prompt
+        const systemPrompt = assistant.prompt
 
         // 2. 设置工具
         const { tools } = this.setupToolsConfig({
           mcpTools: mcpTools,
           model,
-          enableToolUse: isEnabledToolUse(assistant)
+          enableToolUse: isSupportedToolUse(assistant)
         })
-
-        if (this.useSystemPromptForTools) {
-          systemPrompt = await buildSystemPrompt(systemPrompt, mcpTools, assistant)
-        }
 
         const systemMessage: TextBlockParam | undefined = systemPrompt
           ? { type: 'text', text: systemPrompt }
@@ -507,22 +609,14 @@ export class AnthropicAPIClient extends BaseApiClient<
           system: systemMessage ? [systemMessage] : undefined,
           thinking: this.getBudgetToken(assistant, model),
           tools: tools.length > 0 ? tools : undefined,
+          stream: streamOutput,
           // 只在对话场景下应用自定义参数，避免影响翻译、总结等其他业务逻辑
+          // 注意：用户自定义参数总是应该覆盖其他参数
           ...(coreRequest.callType === 'chat' ? this.getCustomParameters(assistant) : {})
         }
 
-        const finalParams: MessageCreateParams = streamOutput
-          ? {
-              ...commonParams,
-              stream: true
-            }
-          : {
-              ...commonParams,
-              stream: false
-            }
-
         const timeout = this.getTimeout(model)
-        return { payload: finalParams, messages: sdkMessages, metadata: { timeout } }
+        return { payload: commonParams, messages: sdkMessages, metadata: { timeout } }
       }
     }
   }
@@ -533,6 +627,15 @@ export class AnthropicAPIClient extends BaseApiClient<
       const toolCalls: Record<number, ToolUseBlock> = {}
       return {
         async transform(rawChunk: AnthropicSdkRawChunk, controller: TransformStreamDefaultController<GenericChunk>) {
+          if (typeof rawChunk === 'string') {
+            try {
+              rawChunk = JSON.parse(rawChunk)
+            } catch (error) {
+              logger.error('invalid chunk', { rawChunk, error })
+              throw new Error(t('error.chat.chunk.non_json'))
+            }
+          }
+
           switch (rawChunk.type) {
             case 'message': {
               let i = 0
@@ -717,14 +820,14 @@ export class AnthropicAPIClient extends BaseApiClient<
 
               if (toolCall) {
                 try {
-                  toolCall.input = JSON.parse(accumulatedJson)
+                  toolCall.input = accumulatedJson ? JSON.parse(accumulatedJson) : {}
                   logger.debug(`Tool call id: ${toolCall.id}, accumulated json: ${accumulatedJson}`)
                   controller.enqueue({
                     type: ChunkType.MCP_TOOL_CREATED,
                     tool_calls: [toolCall]
                   } as MCPToolCreatedChunk)
                 } catch (error) {
-                  logger.error(`Error parsing tool call input: ${error}`)
+                  logger.error('Error parsing tool call input:', error as Error)
                 }
               }
 

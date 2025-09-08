@@ -172,7 +172,7 @@ CREATE TABLE message_blocks (
   content TEXT,                        -- 主要内容
   language TEXT,                       -- 代码块的编程语言
   url TEXT,                           -- 图片块的 URL
-  file TEXT,                          -- 附件的 JSON FileType
+  file TEXT,                          -- 附件的 JSON FileMetadata
 
   -- 工具块特定
   tool_id TEXT,

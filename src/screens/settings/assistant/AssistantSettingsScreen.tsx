@@ -1,5 +1,6 @@
 import { BottomSheetModal } from '@gorhom/bottom-sheet'
 import { useNavigation } from '@react-navigation/native'
+import { StackNavigationProp } from '@react-navigation/stack'
 import { ChevronDown, Languages, MessageSquareMore, Rocket, Settings2 } from '@tamagui/lucide-icons'
 import React, { useRef } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -13,8 +14,8 @@ import ModelSheet from '@/components/sheets/ModelSheet'
 import SafeAreaContainer from '@/components/ui/SafeAreaContainer'
 import { useAssistant } from '@/hooks/useAssistant'
 import { useTheme } from '@/hooks/useTheme'
+import { AssistantSettingsStackParamList } from '@/navigators/settings/AssistantSettingsStackNavigator'
 import { Assistant, Model } from '@/types/assistant'
-import { NavigationProps } from '@/types/naviagate'
 import { getModelOrProviderIcon } from '@/utils/icons'
 
 function ModelPicker({ assistant, onPress }: { assistant: Assistant; onPress: () => void }) {
@@ -79,7 +80,7 @@ function AssistantSettingItem({
   icon
 }: AssistantSettingItemProps) {
   const { t } = useTranslation()
-  const navigation = useNavigation<NavigationProps>()
+  const navigation = useNavigation<StackNavigationProp<AssistantSettingsStackParamList>>()
   const sheetRef = useRef<BottomSheetModal>(null)
 
   const handleModelChange = async (models: Model[]) => {

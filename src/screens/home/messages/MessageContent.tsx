@@ -25,29 +25,39 @@ const MessageContent: React.FC<Props> = ({ message, assistant }) => {
     block => block.type !== MessageBlockType.IMAGE && block.type !== MessageBlockType.FILE
   )
 
-  return (
-    <View
-      style={[isUser ? styles.userContainer : undefined, styles.container]}
-      paddingHorizontal={14}
-      borderRadius={16}>
-      {mediaBlocks.length > 0 && <MessageBlockRenderer blocks={mediaBlocks} />}
-      {contentBlocks.length > 0 && (
+  if (isUser)
+    return (
+      <View style={[styles.userContainer, styles.container]} paddingHorizontal={14} borderRadius={16}>
+        {mediaBlocks.length > 0 && <MessageBlockRenderer blocks={mediaBlocks} />}
         <MessageContextMenu message={message} assistant={assistant}>
+          {contentBlocks.length > 0 && (
+            <Stack
+              style={[styles.contentWrapper, styles.userMessageContent, mediaBlocks.length > 0 && { marginTop: 8 }]}
+              borderRadius={16}
+              backgroundColor={'$green10'}
+              borderColor={'$green20'}
+              borderWidth={1}>
+              <MessageBlockRenderer blocks={contentBlocks} />
+            </Stack>
+          )}
+        </MessageContextMenu>
+      </View>
+    )
+
+  return (
+    <MessageContextMenu message={message} assistant={assistant}>
+      <View style={[styles.container]} paddingHorizontal={14} borderRadius={16}>
+        {mediaBlocks.length > 0 && <MessageBlockRenderer blocks={mediaBlocks} />}
+        {contentBlocks.length > 0 && (
           <Stack
-            style={[
-              isUser ? styles.contentWrapper : undefined,
-              isUser ? styles.userMessageContent : styles.assistantMessageContent,
-              mediaBlocks.length > 0 && { marginTop: 8 }
-            ]}
+            style={[styles.assistantMessageContent, mediaBlocks.length > 0 && { marginTop: 8 }]}
             borderRadius={16}
-            backgroundColor={isUser ? '$green10' : '$green10'}
-            borderColor={isUser ? '$green20' : '$colorTransparent'}
-            borderWidth={1}>
+            backgroundColor={'$green10'}>
             <MessageBlockRenderer blocks={contentBlocks} />
           </Stack>
-        </MessageContextMenu>
-      )}
-    </View>
+        )}
+      </View>
+    </MessageContextMenu>
   )
 }
 

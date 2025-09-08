@@ -1,5 +1,4 @@
 import { useFocusEffect, useNavigation } from '@react-navigation/native'
-import type { StackNavigationProp } from '@react-navigation/stack'
 import { ChevronRight } from '@tamagui/lucide-icons'
 import { useCallback, useState } from 'react'
 import React from 'react'
@@ -11,7 +10,7 @@ import { HeaderBar } from '@/components/settings/HeaderBar'
 import SafeAreaContainer from '@/components/ui/SafeAreaContainer'
 import { languagesOptions } from '@/config/languages'
 import { useTheme } from '@/hooks/useTheme'
-import { GeneralSettingsStackParamList } from '@/navigators/settings/GeneralSettingsStackNavigator'
+import { GeneralSettingsNavigationProps } from '@/types/naviagate'
 import { storage } from '@/utils'
 
 export default function GeneralSettingsScreen() {
@@ -20,7 +19,7 @@ export default function GeneralSettingsScreen() {
   const [language, setLanguage] = useState('zh-CN')
   const { activeTheme } = useTheme()
 
-  const navigation = useNavigation<StackNavigationProp<GeneralSettingsStackParamList>>()
+  const navigation = useNavigation<GeneralSettingsNavigationProps>()
 
   const handleFocus = useCallback(() => {
     const loadSettings = async () => {

@@ -37,7 +37,7 @@ const ReactNativeMarkdown: FC<Props> = ({ block }) => {
       <Markdown
         theme={{
           colors: {
-            code: colors.background,
+            code: colors.codeBg,
             link: colors.link,
             text: colors.text,
             border: colors.border

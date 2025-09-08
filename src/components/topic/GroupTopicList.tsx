@@ -122,7 +122,7 @@ export function GroupedTopicList({ topics, enableScroll, handleNavigateChatScree
     switch (item.type) {
       case 'header':
         return (
-          <Text fontWeight="bold" paddingTop={index !== 0 ? 20 : 0}>
+          <Text color="$textPrimary" fontWeight="bold" paddingTop={index !== 0 ? 20 : 0}>
             {item.title}
           </Text>
         )

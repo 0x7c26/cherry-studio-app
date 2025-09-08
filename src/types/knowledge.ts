@@ -1,12 +1,12 @@
 import { Model } from './assistant'
-import { FileType } from './file'
+import { FileMetadata } from './file'
 
 export type KnowledgeReference = {
   id: number
   content: string
   sourceUrl: string
   type: KnowledgeItemType
-  file?: FileType
+  file?: FileMetadata
 }
 
 export type KnowledgeItemType = 'file' | 'url' | 'note' | 'sitemap' | 'directory'
@@ -19,7 +19,7 @@ export type KnowledgeItem = {
   uniqueId?: string
   uniqueIds?: string[]
   type: KnowledgeItemType
-  content: string | FileType
+  content: string | FileMetadata
   remark?: string
   created_at: number
   updated_at: number

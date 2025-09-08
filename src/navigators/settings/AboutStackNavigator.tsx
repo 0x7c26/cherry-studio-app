@@ -16,6 +16,7 @@ export default function AboutStackNavigator() {
     <Stack.Navigator
       screenOptions={{
         headerShown: false,
+        gestureResponseDistance: 9999,
         ...TransitionPresets.SlideFromRightIOS
       }}>
       <Stack.Screen name="PersonalScreen" component={PersonalScreen} />

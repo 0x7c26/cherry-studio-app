@@ -1,18 +1,24 @@
 import { AiPlugin } from '@cherrystudio/ai-core'
 import { createPromptToolUsePlugin, webSearchPlugin } from '@cherrystudio/ai-core/built-in/plugins'
 
+import { loggerService } from '@/services/LoggerService'
+import { Assistant } from '@/types/assistant'
+
 import { AiSdkMiddlewareConfig } from '../middleware/AiSdkMiddlewareBuilder'
 import reasoningTimePlugin from './reasoningTimePlugin'
-import searchOrchestrationPlugin from './searchOrchestrationPlugin'
+import { searchOrchestrationPlugin } from './searchOrchestrationPlugin'
+
+const logger = loggerService.withContext('PluginBuilder')
 
 /**
  * 根据条件构建插件数组
  */
-export function buildPlugins(middlewareConfig: AiSdkMiddlewareConfig): AiPlugin[] {
+export function buildPlugins(
+  middlewareConfig: AiSdkMiddlewareConfig & { assistant: Assistant; topicId?: string }
+): AiPlugin[] {
   const plugins: AiPlugin[] = []
 
-  // 1. 总是添加通用插件
-  // plugins.push(textPlugin)
+  // 1. 模型内置搜索
   if (middlewareConfig.enableWebSearch) {
     // 内置了默认搜索参数，如果改的话可以传config进去
     plugins.push(webSearchPlugin())
@@ -20,7 +26,7 @@ export function buildPlugins(middlewareConfig: AiSdkMiddlewareConfig): AiPlugin[
 
   // 2. 支持工具调用时添加搜索插件
   if (middlewareConfig.isSupportedToolUse) {
-    plugins.push(searchOrchestrationPlugin(middlewareConfig.assistant))
+    plugins.push(searchOrchestrationPlugin(middlewareConfig.assistant, middlewareConfig.topicId || ''))
   }
 
   // 3. 推理模型时添加推理插件
@@ -58,8 +64,8 @@ export function buildPlugins(middlewareConfig: AiSdkMiddlewareConfig): AiPlugin[
   // if (!middlewareConfig.enableTool && middlewareConfig.mcpTools && middlewareConfig.mcpTools.length > 0) {
   //   plugins.push(createNativeToolUsePlugin())
   // }
-  console.log(
-    '最终插件列表:',
+  logger.info(
+    'Final plugin list:',
     plugins.map(p => p.name)
   )
   return plugins

@@ -1,8 +1,7 @@
 import { BottomSheetModal } from '@gorhom/bottom-sheet'
 import { FlashList, ListRenderItemInfo } from '@shopify/flash-list'
 import { Plus } from '@tamagui/lucide-icons'
-import debounce from 'lodash/debounce'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useCallback, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ActivityIndicator } from 'react-native'
 import { YStack } from 'tamagui'
@@ -14,6 +13,7 @@ import { ProviderItem } from '@/components/settings/providers/ProviderItem'
 import SafeAreaContainer from '@/components/ui/SafeAreaContainer'
 import { SearchInput } from '@/components/ui/SearchInput'
 import { useAllProviders } from '@/hooks/useProviders'
+import { useSearch } from '@/hooks/useSearch'
 import { Provider } from '@/types/assistant'
 
 export default function ProviderListScreen() {
@@ -22,31 +22,17 @@ export default function ProviderListScreen() {
   const bottomSheetRef = useRef<BottomSheetModal>(null)
   const { providers, isLoading } = useAllProviders()
 
-  const [searchText, setSearchText] = useState('')
-  const [debouncedSearchText, setDebouncedSearchText] = useState('')
   const [sheetMode, setSheetMode] = useState<'add' | 'edit'>('add')
   const [editingProvider, setEditingProvider] = useState<Provider | undefined>(undefined)
 
-  // Use useRef to maintain stable debounce function across renders
-  const debouncedSetSearchRef = useRef(
-    debounce((text: string) => {
-      setDebouncedSearchText(text)
-    }, 300)
-  )
-
-  // Listen to searchText changes and trigger debounced update
-  useEffect(() => {
-    const debouncedFunc = debouncedSetSearchRef.current
-    debouncedFunc(searchText)
-
-    // Cleanup function to cancel debounce on unmount
-    return () => {
-      debouncedFunc.cancel()
-    }
-  }, [searchText])
-
-  const filteredProviders = providers.filter(
-    p => p.name && p.name.toLowerCase().includes(debouncedSearchText.toLowerCase())
+  const {
+    searchText,
+    setSearchText,
+    filteredItems: filteredProviders
+  } = useSearch(
+    providers,
+    useCallback((provider: Provider) => [provider.name || ''], []),
+    { delay: 300 }
   )
 
   const onAddProvider = () => {

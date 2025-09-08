@@ -1,12 +1,13 @@
 import OpenAI, { AzureOpenAI } from 'openai'
 
-import { isNotSupportTemperatureAndTopP, isSupportedModel } from '@/config/models'
 import {
   isClaudeReasoningModel,
   isOpenAIReasoningModel,
+  isSupportedModel,
   isSupportedReasoningEffortOpenAIModel
-} from '@/config/models/reasoning'
+} from '@/config/models'
 import { getAssistantSettings } from '@/services/AssistantService'
+import { loggerService } from '@/services/LoggerService'
 import { Assistant, Model, Provider } from '@/types/assistant'
 import { GenerateImageParams } from '@/types/image'
 import {
@@ -25,6 +26,8 @@ import {
 import { formatApiHost } from '@/utils/api'
 
 import { BaseApiClient } from '../BaseApiClient'
+
+const logger = loggerService.withContext('OpenAIBaseClient')
 
 /**
  * 抽象的OpenAI基础客户端类，包含两个OpenAI客户端之间的共享功能
@@ -95,19 +98,25 @@ export abstract class OpenAIBaseClient<
   override async listModels(): Promise<OpenAI.Models.Model[]> {
     try {
       const sdk = await this.getSdkInstance()
-      const response = await sdk.models.list()
 
       if (this.provider.id === 'github') {
+        // GitHub Models 其 models 和 chat completions 两个接口的 baseUrl 不一样
+        const baseUrl = 'https://models.github.ai/catalog/'
+        const newSdk = sdk.withOptions({ baseURL: baseUrl })
+        const response = await newSdk.models.list()
+
         // @ts-ignore key is not typed
         return response?.body
           .map(model => ({
-            id: model.name,
+            id: model.id,
             description: model.summary,
             object: 'model',
             owned_by: model.publisher
           }))
           .filter(isSupportedModel)
       }
+
+      const response = await sdk.models.list()
 
       if (this.provider.id === 'together') {
         // @ts-ignore key is not typed
@@ -126,7 +135,7 @@ export abstract class OpenAIBaseClient<
 
       return models.filter(isSupportedModel)
     } catch (error) {
-      console.error('Error listing models:', error)
+      logger.error('Error listing models:', error as Error)
       return []
     }
   }
@@ -138,13 +147,13 @@ export abstract class OpenAIBaseClient<
 
     const apiKeyForSdkInstance = this.apiKey
 
-    if (this.provider.id === 'copilot') {
-      // const defaultHeaders = store.getState().copilot.defaultHeaders
-      // const { token } = await window.api.copilot.getToken(defaultHeaders)
-      // this.provider.apiKey不允许修改
-      // this.provider.apiKey = token
-      // apiKeyForSdkInstance = token
-    }
+    // if (this.provider.id === 'copilot') {
+    //   const defaultHeaders = store.getState().copilot.defaultHeaders
+    //   const { token } = await window.api.copilot.getToken(defaultHeaders)
+    //   // this.provider.apiKey不允许修改
+    //   // this.provider.apiKey = token
+    //   apiKeyForSdkInstance = token
+    // }
 
     if (this.provider.id === 'azure-openai' || this.provider.type === 'azure-openai') {
       this.sdkInstance = new AzureOpenAI({
@@ -171,25 +180,19 @@ export abstract class OpenAIBaseClient<
   }
 
   override getTemperature(assistant: Assistant, model: Model): number | undefined {
-    if (
-      isNotSupportTemperatureAndTopP(model) ||
-      (assistant.settings?.reasoning_effort && isClaudeReasoningModel(model))
-    ) {
+    if (assistant.settings?.reasoning_effort && isClaudeReasoningModel(model)) {
       return undefined
     }
 
-    return assistant.settings?.temperature
+    return super.getTemperature(assistant, model)
   }
 
   override getTopP(assistant: Assistant, model: Model): number | undefined {
-    if (
-      isNotSupportTemperatureAndTopP(model) ||
-      (assistant.settings?.reasoning_effort && isClaudeReasoningModel(model))
-    ) {
+    if (assistant.settings?.reasoning_effort && isClaudeReasoningModel(model)) {
       return undefined
     }
 
-    return assistant.settings?.topP
+    return super.getTopP(assistant, model)
   }
 
   /**
@@ -232,14 +235,15 @@ export abstract class OpenAIBaseClient<
 
     // const openAI = getStoreSetting('openAI') as SettingsState['openAI']
     // const summaryText = openAI?.summaryText || 'off'
+    const summaryText = 'off'
 
-    // let summary: string | undefined = undefined
+    let summary: string | undefined = undefined
 
-    // if (summaryText === 'off' || model.id.includes('o1-pro')) {
-    //   summary = undefined
-    // } else {
-    //   summary = summaryText
-    // }
+    if (summaryText === 'off' || model.id.includes('o1-pro')) {
+      summary = undefined
+    } else {
+      summary = summaryText
+    }
 
     const reasoningEffort = assistant?.settings?.reasoning_effort
 
@@ -250,8 +254,8 @@ export abstract class OpenAIBaseClient<
     if (isSupportedReasoningEffortOpenAIModel(model)) {
       return {
         reasoning: {
-          effort: reasoningEffort as OpenAI.ReasoningEffort
-          // summary: summary
+          effort: reasoningEffort as OpenAI.ReasoningEffort,
+          summary: summary
         } as OpenAI.Reasoning
       }
     }

@@ -4,9 +4,9 @@ import { ImpactFeedbackStyle } from 'expo-haptics'
 import { FC, useEffect, useState } from 'react'
 import React from 'react'
 import { useTranslation } from 'react-i18next'
-import { Alert } from 'react-native'
+import { Alert, TouchableOpacity } from 'react-native'
 import { Text, XStack, YStack } from 'tamagui'
-import * as ContextMenu from 'zeego/context-menu'
+import ContextMenu from '@/components/ui/ContextMenu'
 
 import i18n from '@/i18n'
 import { getAssistantById } from '@/services/AssistantService'
@@ -113,59 +113,53 @@ const TopicItem: FC<TopicItemProps> = ({
   }
 
   return (
-    <ContextMenu.Root
-      // @ts-expect-error: https://github.com/nandorojo/zeego/issues/80
-      __unsafeIosProps={{
-        shouldWaitForMenuToHideBeforeFiringOnPressMenuItem: false
-      }}>
-      <ContextMenu.Trigger>
-        <XStack
-          onPress={openTopic}
-          borderRadius={16}
-          paddingVertical={5}
-          paddingHorizontal={5}
-          gap={14}
-          justifyContent="center"
-          alignItems="center"
-          backgroundColor={isActive ? '$green10' : 'none'}
-          pressStyle={{ backgroundColor: '$green20' }}>
-          <EmojiAvatar
-            emoji={assistant?.emoji}
-            size={40}
-            borderRadius={12}
-            borderWidth={3}
-            borderColor="$uiCardBackground"
-          />
-          <YStack flex={1}>
-            <XStack justifyContent="space-between">
-              <Text fontWeight="bold" color="$textPrimary">
-                {assistant?.name}
-              </Text>
-              <Text fontSize={12} color="$textSecondary">
-                {displayTime}
-              </Text>
-            </XStack>
-            <Text fontSize={12} numberOfLines={1} ellipsizeMode="tail" fontWeight="400" color="$textPrimary">
-              {topic.name}
+    <ContextMenu
+      list={[
+        {
+          title: t('common.rename'),
+          iOSIcon: 'rectangle.and.pencil.and.ellipsis',
+          androidIcon: <Edit3 size={16} color="$textPrimary" />,
+          onSelect: handleRename
+        },
+        {
+          title: t('common.delete'),
+          iOSIcon: 'trash',
+          androidIcon: <Trash2 size={16} color="red" />,
+          color: 'red',
+          onSelect: () => onDelete?.(topic.id)
+        }
+      ]}
+      onPress={openTopic}>
+      <XStack
+        borderRadius={16}
+        paddingVertical={5}
+        paddingHorizontal={5}
+        gap={14}
+        justifyContent="center"
+        alignItems="center"
+        backgroundColor={isActive ? '$green10' : 'transparent'}>
+        <EmojiAvatar
+          emoji={assistant?.emoji}
+          size={40}
+          borderRadius={12}
+          borderWidth={3}
+          borderColor="$uiCardBackground"
+        />
+        <YStack flex={1}>
+          <XStack justifyContent="space-between">
+            <Text fontSize={16} fontWeight="bold" color="$textPrimary">
+              {assistant?.name}
             </Text>
-          </YStack>
-        </XStack>
-      </ContextMenu.Trigger>
-      <ContextMenu.Content>
-        <ContextMenu.Item key="rename" onSelect={handleRename}>
-          <ContextMenu.ItemTitle>{t('common.rename')}</ContextMenu.ItemTitle>
-          <ContextMenu.ItemIcon ios={{ name: 'rectangle.and.pencil.and.ellipsis' }}>
-            <Edit3 size={16} color="$textPrimary" />
-          </ContextMenu.ItemIcon>
-        </ContextMenu.Item>
-        <ContextMenu.Item key="delete" destructive onSelect={async () => await onDelete?.(topic.id)}>
-          <ContextMenu.ItemTitle>{t('common.delete')}</ContextMenu.ItemTitle>
-          <ContextMenu.ItemIcon ios={{ name: 'trash' }}>
-            <Trash2 size={16} color="red" />
-          </ContextMenu.ItemIcon>
-        </ContextMenu.Item>
-      </ContextMenu.Content>
-    </ContextMenu.Root>
+            <Text fontSize={12} color="$textSecondary">
+              {displayTime}
+            </Text>
+          </XStack>
+          <Text fontSize={13} numberOfLines={1} ellipsizeMode="tail" fontWeight="400" color="$textPrimary">
+            {topic.name}
+          </Text>
+        </YStack>
+      </XStack>
+    </ContextMenu>
   )
 }
 

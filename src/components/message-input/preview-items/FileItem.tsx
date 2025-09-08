@@ -7,13 +7,13 @@ import { Stack, Text, View, XStack, YStack } from 'tamagui'
 
 import { FileIcon } from '@/components/icons/FileIcon'
 import { loggerService } from '@/services/LoggerService'
-import { FileType } from '@/types/file'
+import { FileMetadata } from '@/types/file'
 import { formatFileSize } from '@/utils/file'
 const logger = loggerService.withContext('File Item')
 
 interface FileItemProps {
-  file: FileType
-  onRemove?: (file: FileType) => void
+  file: FileMetadata
+  onRemove?: (file: FileMetadata) => void
   width?: number
   height?: number
 }

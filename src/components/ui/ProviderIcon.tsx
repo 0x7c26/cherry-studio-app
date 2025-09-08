@@ -39,5 +39,5 @@ export const ProviderIcon: React.FC<ProviderIconProps> = ({ provider }) => {
     return null
   }
 
-  return <Image width={20} height={20} source={{ uri: iconUri }} />
+  return <Image borderRadius={99} width={20} height={20} source={{ uri: iconUri }} />
 }

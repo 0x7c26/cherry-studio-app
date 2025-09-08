@@ -102,7 +102,7 @@ const MarqueeComponent: React.FC<Props> = ({ block, expanded }) => {
       </AnimatePresence>
       <YStack gap={5} flex={1} position="relative" height="100%">
         <XStack justifyContent="space-between" alignItems="center">
-          <Text fontWeight="bold" zIndex={2}>
+          <Text color="$textPrimary" fontWeight="bold" zIndex={2}>
             {t('chat.think', { seconds: Math.floor((block.thinking_millsec || 0) / 1000) })}
           </Text>
           <MotiView
@@ -129,7 +129,7 @@ const MarqueeComponent: React.FC<Props> = ({ block, expanded }) => {
                 type: 'timing',
                 duration: 50
               }}>
-              <Text fontSize={12} opacity={0.5}>
+              <Text color="$textSecondary" fontSize={12} opacity={0.5}>
                 {t('chat.think_expand')}
               </Text>
             </MotiView>

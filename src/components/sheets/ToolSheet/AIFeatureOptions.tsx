@@ -3,8 +3,7 @@ import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { Button, Text, XStack, YStack } from 'tamagui'
 
-import { isGenerateImageModel } from '@/config/models/image'
-import { isWebSearchModel } from '@/config/models/webSearch'
+import { isGenerateImageModel, isWebSearchModel } from '@/config/models'
 import { Assistant } from '@/types/assistant'
 
 interface AIFeatureOption {
@@ -36,7 +35,7 @@ export const AIFeatureOptions: React.FC<AIFeatureOptionsProps> = ({
       label: t('common.websearch'),
       icon: <Globe size={18} color={assistant.enableWebSearch ? '$green100' : '$textPrimary'} />,
       onPress: onWebSearchToggle,
-      shouldShow: assistant.model ? isWebSearchModel(assistant.model) || !!assistant.webSearchProviderId : true,
+      shouldShow: assistant.model ? isWebSearchModel(assistant.model) || !!assistant.webSearchProviderId : false,
       getTextColor: () => (assistant.enableWebSearch ? '$green100' : '$textPrimary'),
       getTrailingIcon: () => (assistant.enableWebSearch ? <Check size={18} color="$green100" /> : null)
     },

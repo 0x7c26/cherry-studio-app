@@ -27,6 +27,7 @@ export default function SettingsStackNavigator() {
     <Stack.Navigator
       screenOptions={{
         headerShown: false,
+        gestureResponseDistance: 9999,
         ...TransitionPresets.SlideFromRightIOS
       }}>
       <Stack.Screen name="SettingsScreen" component={SettingsScreen} />

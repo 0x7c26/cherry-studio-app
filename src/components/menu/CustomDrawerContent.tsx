@@ -3,8 +3,7 @@ import { ChevronRight, Settings } from '@tamagui/lucide-icons'
 import { ImpactFeedbackStyle } from 'expo-haptics'
 import React from 'react'
 import { useTranslation } from 'react-i18next'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Avatar, Button, Stack, styled, Text, useTheme, View, XStack, YStack } from 'tamagui'
+import { Avatar, Button, Stack, styled, Text, View, XStack, YStack } from 'tamagui'
 
 import { MenuTabContent } from '@/components/menu/MenuTabContent'
 import { GroupedTopicList } from '@/components/topic/GroupTopicList'
@@ -19,9 +18,7 @@ import SafeAreaContainer from '../ui/SafeAreaContainer'
 
 export default function CustomDrawerContent(props: DrawerContentComponentProps) {
   const { t } = useTranslation()
-  const theme = useTheme()
   const { avatar, userName } = useSettings()
-  const insets = useSafeAreaInsets()
 
   const { topics } = useTopics()
 
@@ -42,7 +39,7 @@ export default function CustomDrawerContent(props: DrawerContentComponentProps) 
 
   const handleNavigateSettingsScreen = () => {
     haptic(ImpactFeedbackStyle.Medium)
-    props.navigation.navigate('Settings', { screen: 'SettingsScreen' })
+    props.navigation.navigate('Home', { screen: 'SettingsScreen' })
   }
 
   const handleNavigateChatScreen = (topicId: string) => {
@@ -57,17 +54,21 @@ export default function CustomDrawerContent(props: DrawerContentComponentProps) 
           <ListItem onPress={handleNavigateAssistantMarketScreen}>
             <XStack gap={10} alignItems="center" justifyContent="center">
               <MarketIcon size={20} />
-              <Text color={theme.color}>{t('assistants.market.title')}</Text>
+              <Text fontSize={16} color="$textPrimary">
+                {t('assistants.market.title')}
+              </Text>
             </XStack>
-            <ChevronRight size={20} color={theme.color} />
+            <ChevronRight size={20} color="$textPrimary" />
           </ListItem>
 
           <ListItem onPress={handleNavigateAssistantScreen}>
             <XStack gap={10} alignItems="center" justifyContent="center">
               <UnionIcon size={20} />
-              <Text color={theme.color}>{t('assistants.market.my_assistant')}</Text>
+              <Text fontSize={16} color="$textPrimary">
+                {t('assistants.market.my_assistant')}
+              </Text>
             </XStack>
-            <ChevronRight size={20} color={theme.color} />
+            <ChevronRight size={20} color="$textPrimary" />
           </ListItem>
           <Stack paddingVertical={5} paddingHorizontal={10}>
             <SettingDivider />
@@ -96,11 +97,13 @@ export default function CustomDrawerContent(props: DrawerContentComponentProps) 
         <XStack gap={10} alignItems="center">
           <Avatar circular size={48}>
             <Avatar.Image accessibilityLabel="Cam" src={avatar || require('@/assets/images/favicon.png')} />
-            <Avatar.Fallback delayMs={600} backgroundColor={theme.blue10} />
+            <Avatar.Fallback delayMs={600} backgroundColor="$blue10" />
           </Avatar>
-          <Text color={theme.color}>{userName || t('common.cherry_studio')}</Text>
+          <Text fontSize={16} color="$textPrimary">
+            {userName || t('common.cherry_studio')}
+          </Text>
         </XStack>
-        <Button icon={<Settings size={24} color={theme.color} />} chromeless onPress={handleNavigateSettingsScreen} />
+        <Button icon={<Settings size={24} color="$textPrimary" />} chromeless onPress={handleNavigateSettingsScreen} />
       </XStack>
     </SafeAreaContainer>
   )

@@ -72,3 +72,14 @@ export async function deleteProvider(providerId: string) {
     throw error
   }
 }
+
+export function getProviderByIdSync(providerId: string): Provider {
+  try {
+    const provider = _getProviderByIdSync(providerId)
+    if (!provider) throw new Error(`Provider with ID ${providerId} not found`)
+    return provider
+  } catch (error) {
+    logger.error('Error getting provider by id:', error)
+    throw error
+  }
+}

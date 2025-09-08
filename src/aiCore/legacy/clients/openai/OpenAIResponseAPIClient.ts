@@ -1,17 +1,27 @@
-import { File } from 'expo-file-system/next'
+import { File, Paths } from 'expo-file-system/next'
+import { t } from 'i18next'
 import { isEmpty } from 'lodash'
 import OpenAI, { AzureOpenAI } from 'openai'
-import { ResponseInput } from 'openai/resources/responses/responses.mjs'
+import { ResponseInput } from 'openai/resources/responses/responses'
 
-import { isOpenAIChatCompletionOnlyModel } from '@/config/models'
-import { isSupportedReasoningEffortOpenAIModel } from '@/config/models/reasoning'
-import { isVisionModel } from '@/config/models/vision'
-import { isOpenAILLMModel } from '@/config/models/webSearch'
+import { GenericChunk } from '@/aiCore/legacy/middleware/schemas'
+import { CompletionsContext } from '@/aiCore/legacy/middleware/types'
+import {
+  isGPT5SeriesModel,
+  isOpenAIChatCompletionOnlyModel,
+  isOpenAILLMModel,
+  isOpenAIOpenWeightModel,
+  isSupportedReasoningEffortOpenAIModel,
+  isSupportVerbosityModel,
+  isVisionModel
+} from '@/config/models'
+import { isSupportDeveloperRoleProvider } from '@/config/providers'
 import { MB } from '@/constants'
+import { loggerService } from '@/services/LoggerService'
 import { estimateTextTokens } from '@/services/TokenService'
-import { Model, Provider } from '@/types/assistant'
+import { Model, OpenAIServiceTier, Provider } from '@/types/assistant'
 import { ChunkType } from '@/types/chunk'
-import { FileType, FileTypes } from '@/types/file'
+import { FileMetadata, FileTypes } from '@/types/file'
 import { MCPCallToolResponse, MCPToolResponse, ToolCallResponse } from '@/types/mcp'
 import { Message } from '@/types/message'
 import {
@@ -26,20 +36,18 @@ import { MCPTool } from '@/types/tool'
 import { WebSearchSource } from '@/types/websearch'
 import { addImageFileToContents } from '@/utils/formats'
 import {
-  isEnabledToolUse,
+  isSupportedToolUse,
   mcpToolCallResponseToOpenAIMessage,
   mcpToolsToOpenAIResponseTools,
   openAIToolsToMcpTool
 } from '@/utils/mcpTool'
 import { findFileBlocks, findImageBlocks } from '@/utils/messageUtils/find'
-import { buildSystemPrompt } from '@/utils/prompt'
 
-import { GenericChunk } from '../../middleware/schemas'
-import { CompletionsContext } from '../../middleware/types'
 import { RequestTransformer, ResponseChunkTransformer } from '../types'
 import { OpenAIAPIClient } from './OpenAIApiClient'
 import { OpenAIBaseClient } from './OpenAIBaseClient'
 
+const logger = loggerService.withContext('OpenAIResponseAPIClient')
 export class OpenAIResponseAPIClient extends OpenAIBaseClient<
   OpenAI,
   OpenAIResponseSdkParams,
@@ -73,7 +81,7 @@ export class OpenAIResponseAPIClient extends OpenAIBaseClient<
    * 根据模型特征选择合适的客户端
    */
   public getClient(model: Model) {
-    if (this.provider.type === 'openai-response') {
+    if (this.provider.type === 'openai-response' && !isOpenAIChatCompletionOnlyModel(model)) {
       return this
     }
 
@@ -92,6 +100,24 @@ export class OpenAIResponseAPIClient extends OpenAIBaseClient<
     } else {
       return this.client
     }
+  }
+
+  /**
+   * 重写基类方法，返回内部实际使用的客户端类型
+   */
+  public override getClientCompatibilityType(model?: Model): string[] {
+    if (!model) {
+      return [this.constructor.name]
+    }
+
+    const actualClient = this.getClient(model)
+
+    // 避免循环调用：如果返回的是自己，直接返回自己的类型
+    if (actualClient === this) {
+      return [this.constructor.name]
+    }
+
+    return actualClient.getClientCompatibilityType(model)
   }
 
   override async getSdkInstance() {
@@ -127,7 +153,7 @@ export class OpenAIResponseAPIClient extends OpenAIBaseClient<
     return await sdk.responses.create(payload, options)
   }
 
-  private async handlePdfFile(file: FileType): Promise<OpenAI.Responses.ResponseInputFile | undefined> {
+  private async handlePdfFile(file: FileMetadata): Promise<OpenAI.Responses.ResponseInputFile | undefined> {
     if (file.size > 32 * MB) return undefined
 
     // try {
@@ -137,50 +163,58 @@ export class OpenAIResponseAPIClient extends OpenAIBaseClient<
     //   return undefined
     // }
 
-    // const { data } = await window.api.file.base64File(file.id + file.ext)
-    // return {
-    //   type: 'input_file',
-    //   filename: file.origin_name,
-    //   file_data: `data:application/pdf;base64,${data}`
-    // } as OpenAI.Responses.ResponseInputFile
-
-    throw new Error('not implemented')
+    const data = new File(file.path).base64()
+    return {
+      type: 'input_file',
+      filename: file.origin_name,
+      file_data: `data:application/pdf;base64,${data}`
+    } as OpenAI.Responses.ResponseInputFile
   }
 
   public async convertMessageToSdkParam(message: Message, model: Model): Promise<OpenAIResponseSdkMessageParam> {
     const isVision = isVisionModel(model)
-    const content = await this.getMessageContent(message)
+    const { textContent, imageContents } = await this.getMessageContent(message)
     const fileBlocks = await findFileBlocks(message)
     const imageBlocks = await findImageBlocks(message)
 
-    if (fileBlocks.length === 0 && imageBlocks.length === 0) {
+    if (fileBlocks.length === 0 && imageBlocks.length === 0 && imageContents.length === 0) {
       if (message.role === 'assistant') {
         return {
           role: 'assistant',
-          content: content
+          content: textContent
         }
       } else {
         return {
           role: message.role === 'system' ? 'user' : message.role,
-          content: content ? [{ type: 'input_text', text: content }] : []
+          content: textContent ? [{ type: 'input_text', text: textContent }] : []
         } as OpenAI.Responses.EasyInputMessage
       }
     }
 
     const parts: OpenAI.Responses.ResponseInputContent[] = []
 
-    if (content) {
+    if (imageContents) {
       parts.push({
         type: 'input_text',
-        text: content
+        text: textContent
       })
+    }
+
+    if (imageContents.length > 0) {
+      for (const imageContent of imageContents) {
+        const image = new File(Paths.join(Paths.cache, 'Files', imageContent.fileId + imageContent.fileExt))
+        parts.push({
+          detail: 'auto',
+          type: 'input_image',
+          image_url: image.base64()
+        })
+      }
     }
 
     for (const imageBlock of imageBlocks) {
       if (isVision) {
         if (imageBlock.file) {
           const image = new File(imageBlock.file.path)
-
           parts.push({
             detail: 'auto',
             type: 'input_image',
@@ -289,8 +323,7 @@ export class OpenAIResponseAPIClient extends OpenAIBaseClient<
 
     const content = this.convertResponseToMessageContent(output)
 
-    const newReqMessages = [...currentReqMessages, ...content, ...(toolResults || [])]
-    return newReqMessages
+    return [...currentReqMessages, ...content, ...(toolResults || [])]
   }
 
   override estimateMessageTokens(message: OpenAIResponseSdkMessageParam): number {
@@ -330,11 +363,11 @@ export class OpenAIResponseAPIClient extends OpenAIBaseClient<
   }
 
   public extractMessagesFromSdkPayload(sdkPayload: OpenAIResponseSdkParams): OpenAIResponseSdkMessageParam[] {
-    if (typeof sdkPayload.input === 'string') {
-      return [{ role: 'user', content: sdkPayload.input }]
+    if (!sdkPayload.input || typeof sdkPayload.input === 'string') {
+      return [{ role: 'user', content: sdkPayload.input ?? '' }]
     }
 
-    return sdkPayload.input || []
+    return sdkPayload.input
   }
 
   getRequestTransformer(): RequestTransformer<OpenAIResponseSdkParams, OpenAIResponseSdkMessageParam> {
@@ -363,7 +396,11 @@ export class OpenAIResponseAPIClient extends OpenAIBaseClient<
           type: 'input_text'
         }
 
-        if (isSupportedReasoningEffortOpenAIModel(model)) {
+        if (
+          isSupportedReasoningEffortOpenAIModel(model) &&
+          isSupportDeveloperRoleProvider(this.provider) &&
+          isOpenAIOpenWeightModel(model)
+        ) {
           systemMessage.role = 'developer'
         }
 
@@ -372,12 +409,8 @@ export class OpenAIResponseAPIClient extends OpenAIBaseClient<
         const { tools: extraTools } = this.setupToolsConfig({
           mcpTools: mcpTools,
           model,
-          enableToolUse: isEnabledToolUse(assistant)
+          enableToolUse: isSupportedToolUse(assistant)
         })
-
-        if (this.useSystemPromptForTools) {
-          systemMessageInput.text = await buildSystemPrompt(systemMessageInput.text || '', mcpTools, assistant)
-        }
 
         systemMessageContent.push(systemMessageInput)
         systemMessage.content = systemMessageContent
@@ -436,7 +469,15 @@ export class OpenAIResponseAPIClient extends OpenAIBaseClient<
         }
 
         tools = tools.concat(extraTools)
-        const commonParams = {
+
+        const reasoningEffort = this.getReasoningEffort(assistant, model)
+
+        // minimal cannot be used with web_search tool
+        if (isGPT5SeriesModel(model) && reasoningEffort.reasoning?.effort === 'minimal' && enableWebSearch) {
+          reasoningEffort.reasoning.effort = 'low'
+        }
+
+        const commonParams: OpenAIResponseSdkParams = {
           model: model.id,
           input:
             isRecursiveCall && recursiveSdkMessages && recursiveSdkMessages.length > 0
@@ -447,22 +488,22 @@ export class OpenAIResponseAPIClient extends OpenAIBaseClient<
           max_output_tokens: maxTokens,
           stream: streamOutput,
           tools: !isEmpty(tools) ? tools : undefined,
-          // service_tier: this.getServiceTier(model),
+          // groq 有不同的 service tier 配置，不符合 openai 接口类型
+          service_tier: this.getServiceTier(model) as OpenAIServiceTier,
+          ...(isSupportVerbosityModel(model)
+            ? {
+                text: {
+                  verbosity: this.getVerbosity()
+                }
+              }
+            : {}),
           ...(this.getReasoningEffort(assistant, model) as OpenAI.Reasoning),
           // 只在对话场景下应用自定义参数，避免影响翻译、总结等其他业务逻辑
+          // 注意：用户自定义参数总是应该覆盖其他参数
           ...(coreRequest.callType === 'chat' ? this.getCustomParameters(assistant) : {})
         }
-        const sdkParams: OpenAIResponseSdkParams = streamOutput
-          ? {
-              ...commonParams,
-              stream: true
-            }
-          : {
-              ...commonParams,
-              stream: false
-            }
         const timeout = this.getTimeout(model)
-        return { payload: sdkParams, messages: reqMessages, metadata: { timeout } }
+        return { payload: commonParams, messages: reqMessages, metadata: { timeout } }
       }
     }
   }
@@ -476,6 +517,15 @@ export class OpenAIResponseAPIClient extends OpenAIBaseClient<
     let isFirstTextChunk = true
     return () => ({
       async transform(chunk: OpenAIResponseSdkRawChunk, controller: TransformStreamDefaultController<GenericChunk>) {
+        if (typeof chunk === 'string') {
+          try {
+            chunk = JSON.parse(chunk)
+          } catch (error) {
+            logger.error('invalid chunk', { chunk, error })
+            throw new Error(t('error.chat.chunk.non_json'))
+          }
+        }
+
         // 处理chunk
         if ('output' in chunk) {
           if (ctx._internal?.toolProcessingState) {

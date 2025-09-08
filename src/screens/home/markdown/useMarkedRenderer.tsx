@@ -1,47 +1,49 @@
 import { Copy } from '@tamagui/lucide-icons'
 import * as Clipboard from 'expo-clipboard'
-import React, { memo, ReactNode, useMemo } from 'react'
+import React, { ReactNode, useMemo } from 'react'
 import { StyleSheet, TextStyle, ViewStyle } from 'react-native'
 import CodeHighlighter from 'react-native-code-highlighter'
 import type { RendererInterface } from 'react-native-marked'
 import { MarkedTokenizer, Renderer } from 'react-native-marked'
-import MathJax from 'react-native-mathjax-svg'
 import { atomOneDark, atomOneLight } from 'react-syntax-highlighter/dist/esm/styles/hljs'
-import { Button, Image, Text, View, XStack } from 'tamagui'
+import { Image, Text, View, XStack } from 'tamagui'
 
+import { IconButton } from '@/components/ui/IconButton'
 import { getCodeLanguageIcon } from '@/utils/icons/codeLanguage'
 
 import { markdownColors } from './MarkdownStyles'
+import { ExtractMathResult, useMathEquation } from './useMathEquation'
 
 // const logger = loggerService.withContext('useMarkedRenderer')
-
-// Memoized MathJax component to prevent unnecessary re-renders
-const MemoizedMathJax = memo(({ content, fontSize, color }: { content: string; fontSize: number; color: string }) => {
-  return (
-    <MathJax fontSize={fontSize} color={color}>
-      {content}
-    </MathJax>
-  )
-})
 
 class CustomTokenizer extends MarkedTokenizer {}
 
 class CustomRenderer extends Renderer implements RendererInterface {
   private isDark: boolean
   private equationColor: string
+  private extractInlineMathEquation: (text: string) => ExtractMathResult[]
+  private extractAllMathEquation: (text: string) => ExtractMathResult[]
+  private renderInlineMath: (content: string, key?: string | number) => React.JSX.Element
+  private renderBlockMath: (content: string, key?: string | number) => React.JSX.Element
 
-  constructor(isDark: boolean) {
+  constructor(
+    isDark: boolean,
+    extractInlineMathEquation: (text: string) => ExtractMathResult[],
+    extractAllMathEquation: (text: string) => ExtractMathResult[],
+    renderInlineMath: (content: string, key?: string | number) => React.JSX.Element,
+    renderBlockMath: (content: string, key?: string | number) => React.JSX.Element
+  ) {
     super()
     this.isDark = isDark
     this.equationColor = isDark ? markdownColors.dark.text : markdownColors.light.text
+    this.extractInlineMathEquation = extractInlineMathEquation
+    this.extractAllMathEquation = extractAllMathEquation
+    this.renderInlineMath = renderInlineMath
+    this.renderBlockMath = renderBlockMath
   }
 
   private async onCopy(content: string) {
     await Clipboard.setStringAsync(content)
-  }
-
-  private renderInlineMath(content: string) {
-    return <MemoizedMathJax key={this.getKey()} content={content} fontSize={16} color={this.equationColor} />
   }
 
   // Override code block rendering
@@ -53,33 +55,31 @@ class CustomRenderer extends Renderer implements RendererInterface {
         key={this.getKey()}
         style={{
           gap: 10,
-          padding: 5,
-          borderRadius: 6,
-          borderWidth: 2,
-          borderColor: this.isDark ? '#8de59e26' : '#8de59e26',
-          backgroundColor: currentColors.background,
+          paddingHorizontal: 14,
+          paddingTop: 0,
+          paddingBottom: 14,
+          borderRadius: 12,
           ...containerStyle
         }}>
         <XStack
-          flex={1}
-          paddingVertical={5}
+          paddingVertical={10}
           justifyContent="space-between"
           alignItems="center"
           borderBottomWidth={1}
-          borderColor="$green10">
+          borderColor={currentColors.codeBorder}>
           <XStack gap={8} flex={1} alignItems="center">
             {getCodeLanguageIcon(lang) && <Image source={getCodeLanguageIcon(lang)} width={18} height={18} />}
-            <Text fontSize={13} lineHeight={16} color={currentColors.text}>
+            <Text fontSize={13} lineHeight={13} color="$textSecondary">
               {lang.toUpperCase()}
             </Text>
           </XStack>
-          <Button size={18} chromeless circular icon={<Copy size={16} />} onPress={() => this.onCopy(text)} />
+          <IconButton icon={<Copy size={16} color="$textSecondary" />} onPress={() => this.onCopy(text)} />
         </XStack>
         <CodeHighlighter
           customStyle={{ backgroundColor: 'transparent' }}
           scrollViewProps={{
             contentContainerStyle: {
-              backgroundColor: currentColors.background
+              backgroundColor: 'transparent'
             },
             showsHorizontalScrollIndicator: false
           }}
@@ -101,17 +101,22 @@ class CustomRenderer extends Renderer implements RendererInterface {
   // Override inline code rendering
   codespan(text: string): ReactNode {
     // support katex
-    const match = text.match(/\$+([^\$\n]+?)\$+/)
+    const result = this.extractInlineMathEquation(text)
 
-    if (match?.[1]) {
-      return this.renderInlineMath(match[1])
-    }
-
-    return (
-      <Text key={this.getKey()} color="$green100" fontFamily="monospace">
-        {text}
-      </Text>
-    )
+    return result.map(({ type, content }) => {
+      if (type === 'text') {
+        return (
+          <Text key={this.getKey()} color="$green100" fontFamily="monospace">
+            {content}
+          </Text>
+        )
+      } else if (type === 'block-latex') {
+        // 上面的 extractInlineMathEquation 不会解析 block latex
+        return null
+      } else {
+        return this.renderInlineMath(content, this.getKey())
+      }
+    })
   }
 
   // Override heading rendering
@@ -143,21 +148,38 @@ class CustomRenderer extends Renderer implements RendererInterface {
     const currentColors = this.isDark ? markdownColors.dark : markdownColors.light
 
     if (typeof text === 'string') {
-      // support katex
-      const match = text.match(/\$+([^\$\n]+?)\$+/)
+      // Check for block equations first
+      const result = this.extractAllMathEquation(text)
 
-      if (match?.[1]) {
-        return this.renderInlineMath(match[1])
-      }
+      return result.map(({ type, content }) => {
+        if (type === 'block-latex') {
+          return this.renderBlockMath(content, this.getKey())
+        } else if (type === 'inline-latex') {
+          return this.renderInlineMath(content, this.getKey())
+        } else {
+          return super.text(content, {
+            ...styles,
+            color: currentColors.text
+          })
+        }
+      })
+    } else {
+      return super.text(text, {
+        ...styles,
+        color: currentColors.text,
+        justifyContent: 'center',
+        alignItems: 'center',
+        flex: 1
+      })
     }
+  }
 
-    // return (
-    //   <Text selectable key={this.getKey()} style={[styles, { color: currentColors.text }]}>
-    //     {text}
-    //   </Text>
-    // )
-
-    return super.text(text, { ...styles, color: currentColors.text })
+  getTextNode(children: string | ReactNode[], styles?: TextStyle): ReactNode {
+    return (
+      <Text selectable key={this.getKey()} style={{ ...styles, lineHeight: undefined }}>
+        {children}
+      </Text>
+    )
   }
 
   // em(children: string | ReactNode[], styles?: TextStyle): ReactNode {
@@ -201,14 +223,18 @@ class CustomRenderer extends Renderer implements RendererInterface {
     return super.list(
       ordered,
       li,
-      { ...listStyle, ...currentColors, alignItems: 'center', justifyContent: 'center' },
-      textStyle,
+      { ...listStyle, ...currentColors, alignItems: 'flex-start', justifyContent: 'flex-start' },
+      { ...textStyle, textAlign: 'center', alignSelf: 'flex-start' },
       startIndex
     )
   }
 
   listItem(children: ReactNode[], styles?: ViewStyle): ReactNode {
-    return super.listItem(children, { ...styles, paddingVertical: 5 })
+    return super.listItem(children, {
+      ...styles,
+      width: '100%',
+      alignItems: 'flex-start'
+    })
   }
 }
 
@@ -218,7 +244,15 @@ class CustomRenderer extends Renderer implements RendererInterface {
  * @param isDark - Whether the theme is dark, used for styling.
  */
 export const useMarkedRenderer = (isDark: boolean) => {
-  const renderer = useMemo(() => new CustomRenderer(isDark), [isDark])
+  const equationColor = isDark ? markdownColors.dark.text : markdownColors.light.text
+  const { extractInlineMathEquation, extractAllMathEquation, renderInlineMath, renderBlockMath } =
+    useMathEquation(equationColor)
+
+  const renderer = useMemo(
+    () =>
+      new CustomRenderer(isDark, extractInlineMathEquation, extractAllMathEquation, renderInlineMath, renderBlockMath),
+    [isDark, extractInlineMathEquation, extractAllMathEquation, renderInlineMath, renderBlockMath]
+  )
   const tokenizer = useMemo(() => new CustomTokenizer(), [])
 
   return { renderer, tokenizer }

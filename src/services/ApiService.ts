@@ -1,4 +1,3 @@
-import { StreamTextParams } from '@cherrystudio/ai-core'
 import { t } from 'i18next'
 import { isEmpty, takeRight } from 'lodash'
 
@@ -7,50 +6,57 @@ import AiProvider from '@/aiCore'
 import ModernAiProvider from '@/aiCore/index_new'
 import { CompletionsParams } from '@/aiCore/legacy/middleware/schemas'
 import { AiSdkMiddlewareConfig } from '@/aiCore/middleware/AiSdkMiddlewareBuilder'
-import { buildStreamTextParams, convertMessagesToSdkMessages } from '@/aiCore/transformParameters'
-import { isEmbeddingModel } from '@/config/models/embedding'
-import { isDedicatedImageGenerationModel } from '@/config/models/image'
+import { buildStreamTextParams, convertMessagesToSdkMessages } from '@/aiCore/prepareParams'
+import { isDedicatedImageGenerationModel, isEmbeddingModel } from '@/config/models'
 import i18n from '@/i18n'
 import { loggerService } from '@/services/LoggerService'
-import { Assistant, Model, Provider } from '@/types/assistant'
-import { Chunk, ChunkType } from '@/types/chunk'
+import { FetchChatCompletionParams, Model, Provider } from '@/types/assistant'
+import { ChunkType } from '@/types/chunk'
 import { SdkModel } from '@/types/sdk'
+import { MCPTool } from '@/types/tool'
+import { isPromptToolUse, isSupportedToolUse } from '@/utils/mcpTool'
 import { filterMainTextMessages } from '@/utils/messageUtils/filters'
 
+import AiProviderNew from '../aiCore/index_new'
 import { createBlankAssistant, getAssistantById, getDefaultModel } from './AssistantService'
 import { getAssistantProvider } from './ProviderService'
 import { createStreamProcessor, StreamProcessorCallbacks } from './StreamProcessingService'
 import { getTopicById, upsertTopics } from './TopicService'
+
 const logger = loggerService.withContext('fetchChatCompletion')
 
 export async function fetchChatCompletion({
   messages,
+  prompt,
   assistant,
   options,
-  onChunkReceived
-}: {
-  messages: StreamTextParams['messages']
-  assistant: Assistant
-  options: {
-    signal?: AbortSignal
-    timeout?: number
-    headers?: Record<string, string>
-  }
+  onChunkReceived,
+  topicId,
+  uiMessages
+}: FetchChatCompletionParams) {
+  const AI = new AiProviderNew(assistant.model || getDefaultModel())
+  const provider = AI.getActualProvider()
 
-  onChunkReceived: (chunk: Chunk) => void
-}) {
-  const provider = await getAssistantProvider(assistant)
-
-  const AI = new ModernAiProvider(assistant.model || getDefaultModel(), provider)
+  const mcpTools: MCPTool[] = []
 
   console.log('fetchChatCompletion', assistant)
+
+  if (prompt) {
+    messages = [
+      {
+        role: 'user',
+        content: prompt
+      }
+    ]
+  }
+
   // 使用 transformParameters 模块构建参数
   const {
     params: aiSdkParams,
     modelId,
     capabilities
   } = await buildStreamTextParams(messages, assistant, provider, {
-    // mcpTools: mcpTools,
+    mcpTools: mcpTools,
     webSearchProviderId: assistant.webSearchProviderId,
     requestOptions: options
   })
@@ -61,20 +67,25 @@ export async function fetchChatCompletion({
     streamOutput: assistant.settings?.streamOutput ?? true,
     onChunk: onChunkReceived,
     model: assistant.model,
-    provider: provider,
     enableReasoning: capabilities.enableReasoning,
-    isPromptToolUse: false,
-    isSupportedToolUse: true,
+    isPromptToolUse: isPromptToolUse(assistant),
+    isSupportedToolUse: isSupportedToolUse(assistant),
     isImageGenerationEndpoint: isDedicatedImageGenerationModel(assistant.model || getDefaultModel()),
     enableWebSearch: capabilities.enableWebSearch,
     enableGenerateImage: capabilities.enableGenerateImage,
-    mcpTools: [],
-    assistant
+    mcpTools,
+    uiMessages
   }
 
   // --- Call AI Completions ---
   onChunkReceived({ type: ChunkType.LLM_RESPONSE_CREATED })
-  await AI.completions(modelId, aiSdkParams, middlewareConfig)
+  await AI.completions(modelId, aiSdkParams, {
+    ...middlewareConfig,
+    assistant,
+    topicId,
+    callType: 'chat',
+    uiMessages
+  })
 }
 
 export async function fetchModels(provider: Provider): Promise<SdkModel[]> {
@@ -199,29 +210,33 @@ export async function fetchTopicNaming(topicId: string) {
   const llmMessages = await convertMessagesToSdkMessages(mainTextMessages, quickAssistant.model)
 
   const AI = new ModernAiProvider(quickAssistant.model || getDefaultModel(), provider)
-  const {
-    params: aiSdkParams,
-    modelId,
-    capabilities
-  } = await buildStreamTextParams(llmMessages, quickAssistant, provider)
+  const { params: aiSdkParams, modelId } = await buildStreamTextParams(llmMessages, quickAssistant, provider)
 
   const middlewareConfig: AiSdkMiddlewareConfig = {
-    streamOutput: quickAssistant.settings?.streamOutput ?? true,
+    streamOutput: false,
     onChunk: streamProcessorCallbacks,
     model: quickAssistant.model,
     provider: provider,
-    enableReasoning: capabilities.enableReasoning,
+    enableReasoning: false,
     isPromptToolUse: false,
     isSupportedToolUse: false,
-    isImageGenerationEndpoint: isDedicatedImageGenerationModel(quickAssistant.model || getDefaultModel()),
-    enableWebSearch: capabilities.enableWebSearch,
-    enableGenerateImage: capabilities.enableGenerateImage,
-    mcpTools: [],
-    assistant: quickAssistant
+    isImageGenerationEndpoint: false,
+    enableWebSearch: false,
+    enableGenerateImage: false,
+    mcpTools: []
   }
 
   try {
-    return (await AI.completions(modelId, aiSdkParams, middlewareConfig)).getText() || ''
+    return (
+      (
+        await AI.completions(modelId, aiSdkParams, {
+          ...middlewareConfig,
+          assistant: quickAssistant,
+          topicId,
+          callType: 'summary'
+        })
+      ).getText() || ''
+    )
   } catch (error: any) {
     logger.error('Error during translation:', error)
     return ''

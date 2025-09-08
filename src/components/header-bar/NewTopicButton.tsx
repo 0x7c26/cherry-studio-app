@@ -2,7 +2,6 @@ import { useNavigation } from '@react-navigation/native'
 import { MessageSquareDiff } from '@tamagui/lucide-icons'
 import { ImpactFeedbackStyle } from 'expo-haptics'
 import React from 'react'
-import { Button, XStack } from 'tamagui'
 
 import { createNewTopic, getNewestTopic } from '@/services/TopicService'
 import { useAppDispatch } from '@/store'
@@ -10,6 +9,8 @@ import { setCurrentTopicId } from '@/store/topic'
 import { Assistant } from '@/types/assistant'
 import { DrawerNavigationProps } from '@/types/naviagate'
 import { haptic } from '@/utils/haptic'
+
+import { IconButton } from '../ui/IconButton'
 
 interface NewTopicButtonProps {
   assistant: Assistant
@@ -34,9 +35,5 @@ export const NewTopicButton: React.FC<NewTopicButtonProps> = ({ assistant }) => 
     }
   }
 
-  return (
-    <XStack alignItems="center" justifyContent="flex-end">
-      <Button size={24} circular chromeless icon={<MessageSquareDiff size={24} />} onPress={handleAddNewTopic} />
-    </XStack>
-  )
+  return <IconButton onPress={handleAddNewTopic} icon={<MessageSquareDiff size={24} />} />
 }

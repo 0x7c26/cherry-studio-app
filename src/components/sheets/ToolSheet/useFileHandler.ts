@@ -4,15 +4,15 @@ import * as ImagePicker from 'expo-image-picker'
 
 import { uploadFiles } from '@/services/FileService'
 import { loggerService } from '@/services/LoggerService'
-import { FileType, FileTypes } from '@/types/file'
+import { FileMetadata, FileTypes } from '@/types/file'
 import { uuid } from '@/utils'
 import { getFileType } from '@/utils/file'
 
 const logger = loggerService.withContext('File Handler')
 
 interface UseFileHandlerProps {
-  files: FileType[]
-  setFiles: (files: FileType[]) => void
+  files: FileMetadata[]
+  setFiles: (files: FileMetadata[]) => void
   onSuccess?: () => void
 }
 
@@ -40,7 +40,7 @@ export const useFileHandler = ({ files, setFiles, onSuccess }: UseFileHandlerPro
         return
       }
 
-      const _files: Omit<FileType, 'md5'>[] = result.assets.map(asset => {
+      const _files: Omit<FileMetadata, 'md5'>[] = result.assets.map(asset => {
         const id = uuid()
         return {
           id: id,
@@ -72,7 +72,7 @@ export const useFileHandler = ({ files, setFiles, onSuccess }: UseFileHandlerPro
         return
       }
 
-      const _files: Omit<FileType, 'md5'>[] = result.assets.map(asset => {
+      const _files: Omit<FileMetadata, 'md5'>[] = result.assets.map(asset => {
         return {
           id: uuid(),
           name: asset.name,
@@ -106,7 +106,7 @@ export const useFileHandler = ({ files, setFiles, onSuccess }: UseFileHandlerPro
 
       const id = uuid()
       const fileName = photoUri.split('/').pop() || `${id}.jpg`
-      const _file: Omit<FileType, 'md5'> = {
+      const _file: Omit<FileMetadata, 'md5'> = {
         id: id,
         name: fileName,
         origin_name: fileName,

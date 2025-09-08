@@ -6,6 +6,7 @@ import { CompletionsParams, CompletionsResult, GenericChunk } from '../schemas'
 import { CompletionsContext, CompletionsMiddleware } from '../types'
 
 const logger = loggerService.withContext('WebSearchMiddleware')
+
 export const MIDDLEWARE_NAME = 'WebSearchMiddleware'
 
 /**
@@ -105,7 +106,7 @@ export const WebSearchMiddleware: CompletionsMiddleware =
           stream: enhancedStream
         }
       } else {
-        logger.info('No stream to process or not a ReadableStream.')
+        logger.debug(`No stream to process or not a ReadableStream.`)
       }
     }
 

@@ -1,10 +1,10 @@
 import { BottomSheetBackdrop, BottomSheetModal, BottomSheetView } from '@gorhom/bottom-sheet'
 import { Check } from '@tamagui/lucide-icons'
-import React, { forwardRef, useEffect } from 'react'
+import React, { forwardRef, useEffect, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { BackHandler } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Button, Text, useTheme, View, XStack, YStack } from 'tamagui'
+import { Button, Text, View, XStack, YStack } from 'tamagui'
 
 import {
   MdiLightbulbAutoOutline,
@@ -13,41 +13,20 @@ import {
   MdiLightbulbOn50,
   MdiLightbulbOn90
 } from '@/components/icons/MdiLightbulbIcon'
-import { GEMINI_FLASH_MODEL_REGEX } from '@/config/models'
+import { GEMINI_FLASH_MODEL_REGEX, MODEL_SUPPORTED_OPTIONS } from '@/config/models'
 import {
   isDoubaoThinkingAutoModel,
   isSupportedReasoningEffortGrokModel,
   isSupportedThinkingTokenDoubaoModel,
   isSupportedThinkingTokenGeminiModel,
   isSupportedThinkingTokenQwenModel
-} from '@/config/models/reasoning'
-import { useTheme as useCustomTheme } from '@/hooks/useTheme'
-import { Assistant, ReasoningEffortOptions } from '@/types/assistant'
-
-export type ThinkingOption = ReasoningEffortOptions | 'off'
+} from '@/config/models'
+import { useTheme } from '@/hooks/useTheme'
+import { Assistant, ThinkingOption } from '@/types/assistant'
 
 interface ReasoningSheetProps {
   assistant: Assistant
   updateAssistant: (assistant: Assistant) => Promise<void>
-}
-
-// (迁移) 模型类型到支持选项的映射表
-const MODEL_SUPPORTED_OPTIONS: Record<string, ThinkingOption[]> = {
-  default: ['off', 'low', 'medium', 'high'],
-  grok: ['low', 'high'],
-  gemini: ['off', 'low', 'medium', 'high', 'auto'],
-  gemini_pro: ['low', 'medium', 'high', 'auto'],
-  qwen: ['off', 'low', 'medium', 'high'],
-  doubao: ['off', 'auto', 'high']
-}
-
-// (迁移) 选项转换映射表：当选项不支持时使用的替代选项
-const OPTION_FALLBACK: Record<ThinkingOption, ThinkingOption> = {
-  off: 'low', // off -> low (for Gemini Pro models)
-  low: 'high',
-  medium: 'high', // medium -> high (for Grok models)
-  high: 'high',
-  auto: 'high' // auto -> high (for non-Gemini models)
 }
 
 const createThinkingIcon = (option?: ThinkingOption) => {
@@ -74,8 +53,7 @@ const renderBackdrop = (props: any) => (
 export const ReasoningSheet = forwardRef<BottomSheetModal, ReasoningSheetProps>(
   ({ assistant, updateAssistant }, ref) => {
     const { t } = useTranslation()
-    const theme = useTheme()
-    const { isDark } = useCustomTheme()
+    const { isDark } = useTheme()
     const model = assistant.model!
 
     const isGrokModel = isSupportedReasoningEffortGrokModel(model)
@@ -99,17 +77,18 @@ export const ReasoningSheet = forwardRef<BottomSheetModal, ReasoningSheetProps>(
       return 'default'
     })()
 
-    const supportedOptions = (() => {
+    // 获取当前模型支持的选项
+    const supportedOptions: ThinkingOption[] = useMemo(() => {
       if (modelType === 'doubao') {
         if (isDoubaoThinkingAutoModel(model)) {
-          return ['off', 'auto', 'high'] as ThinkingOption[]
+          return ['off', 'auto', 'high']
         }
 
-        return ['off', 'high'] as ThinkingOption[]
+        return ['off', 'high']
       }
 
       return MODEL_SUPPORTED_OPTIONS[modelType]
-    })()
+    }, [model, modelType])
 
     // 处理Android返回按钮事件
     useEffect(() => {
@@ -126,20 +105,6 @@ export const ReasoningSheet = forwardRef<BottomSheetModal, ReasoningSheetProps>(
 
       return () => backHandler.remove()
     }, [ref])
-
-    useEffect(() => {
-      if (currentReasoningEffort && !supportedOptions.includes(currentReasoningEffort)) {
-        const fallbackOption = OPTION_FALLBACK[currentReasoningEffort as ThinkingOption]
-        updateAssistant({
-          ...assistant,
-          settings: {
-            ...assistant.settings,
-            reasoning_effort: fallbackOption === 'off' ? undefined : fallbackOption,
-            qwenThinkMode: fallbackOption !== 'off'
-          }
-        })
-      }
-    }, [assistant, currentReasoningEffort, supportedOptions, updateAssistant, model?.id])
 
     const onValueChange = (option?: ThinkingOption) => {
       const isEnabled = option !== undefined && option !== 'off'
@@ -185,7 +150,7 @@ export const ReasoningSheet = forwardRef<BottomSheetModal, ReasoningSheetProps>(
           backgroundColor: isDark ? '#121213ff' : '#f7f7f7ff'
         }}
         handleIndicatorStyle={{
-          backgroundColor: theme.color.val
+          backgroundColor: isDark ? '#f9f9f9ff' : '#202020ff'
         }}>
         <BottomSheetView style={{ paddingBottom: insets.bottom }}>
           <YStack gap={10} paddingHorizontal={20} paddingBottom={20}>

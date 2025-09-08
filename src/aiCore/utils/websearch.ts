@@ -1,4 +1,4 @@
-import { isOpenAIWebSearchChatCompletionOnlyModel } from '@/config/models/webSearch'
+import { isOpenAIWebSearchChatCompletionOnlyModel } from '@/config/models'
 import { WEB_SEARCH_PROMPT_FOR_OPENROUTER } from '@/config/prompts'
 import { Model } from '@/types/assistant'
 

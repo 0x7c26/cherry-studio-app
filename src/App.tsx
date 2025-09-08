@@ -2,7 +2,7 @@ import 'react-native-reanimated'
 import '@/i18n'
 
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet'
-import { NavigationContainer, ThemeProvider } from '@react-navigation/native'
+import { NavigationContainer } from '@react-navigation/native'
 import { useMigrations } from 'drizzle-orm/expo-sqlite/migrator'
 import { useDrizzleStudio } from 'expo-drizzle-studio-plugin'
 import { useFonts } from 'expo-font'
@@ -17,7 +17,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { KeyboardProvider } from 'react-native-keyboard-controller'
 import { Provider, useSelector } from 'react-redux'
 import { PersistGate } from 'redux-persist/integration/react'
-import { PortalProvider, TamaguiProvider } from 'tamagui'
+import { PortalProvider, TamaguiProvider, Theme } from 'tamagui'
 
 import { getDataBackupProviders } from '@/config/backup'
 import { getWebSearchProviders } from '@/config/websearchProviders'
@@ -111,13 +111,13 @@ function ThemedApp() {
       <PortalProvider>
         <KeyboardProvider>
           <NavigationContainer theme={reactNavigationTheme}>
-            <ThemeProvider value={reactNavigationTheme}>
+            <Theme name={isDark ? 'dark' : 'light'}>
               <BottomSheetModalProvider>
-                <StatusBar style={isDark ? 'light' : 'dark'} />
+                <StatusBar style={isDark ? 'light' : 'dark'} backgroundColor={backgroundColor} />
                 <DatabaseInitializer />
                 <MainStackNavigator />
               </BottomSheetModalProvider>
-            </ThemeProvider>
+            </Theme>
           </NavigationContainer>
         </KeyboardProvider>
       </PortalProvider>

@@ -29,7 +29,7 @@ export const MessageWebSearchToolTitle = ({ toolResponse }: { toolResponse: MCPT
       <Search size={16} color="$textSecondary" />
       <Text fontSize={14} color="$textSecondary">
         {i18n.t('message.websearch.fetch_complete', {
-          count: toolOutput?.searchResults?.reduce((acc, result) => acc + result.results.length, 0) ?? 0
+          count: toolOutput?.searchResults?.results?.length ?? 0
         })}
       </Text>
     </MessageWebSearchToolTitleTextWrapper>

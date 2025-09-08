@@ -5,14 +5,14 @@ import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { Alert, BackHandler, Keyboard, TouchableWithoutFeedback } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Button, Text, useTheme, XStack, YStack } from 'tamagui'
+import { Button, Text, XStack, YStack } from 'tamagui'
 
-import { useTheme as useCustomTheme } from '@/hooks/useTheme'
+import { useTheme } from '@/hooks/useTheme'
 import { fileStorageDir, uploadFiles } from '@/services/FileService'
 import { loggerService } from '@/services/LoggerService'
 import { saveProvider } from '@/services/ProviderService'
 import { Provider, ProviderType } from '@/types/assistant'
-import { FileType } from '@/types/file'
+import { FileMetadata } from '@/types/file'
 import { uuid } from '@/utils'
 
 import { ProviderIconButton } from './ProviderIconButton'
@@ -29,8 +29,7 @@ interface ProviderSheetProps {
 const ProviderSheet = forwardRef<BottomSheetModal, ProviderSheetProps>(
   ({ mode = 'add', editProvider, onSave }, ref) => {
     const { t } = useTranslation()
-    const theme = useTheme()
-    const { isDark } = useCustomTheme()
+    const { isDark } = useTheme()
     const insets = useSafeAreaInsets()
     const [providerId, setProviderId] = useState(() => editProvider?.id || uuid())
 
@@ -38,7 +37,7 @@ const ProviderSheet = forwardRef<BottomSheetModal, ProviderSheetProps>(
     const [selectedProviderType, setSelectedProviderType] = useState<ProviderType | undefined>(
       editProvider?.type || undefined
     )
-    const [selectedImageFile, setSelectedImageFile] = useState<Omit<FileType, 'md5'> | null>(null)
+    const [selectedImageFile, setSelectedImageFile] = useState<Omit<FileMetadata, 'md5'> | null>(null)
 
     // 当 editProvider 变化时，更新表单字段
     useEffect(() => {
@@ -73,12 +72,12 @@ const ProviderSheet = forwardRef<BottomSheetModal, ProviderSheetProps>(
       <BottomSheetBackdrop {...props} appearsOnIndex={0} disappearsOnIndex={-1} opacity={0.5} pressBehavior="close" />
     )
 
-    const handleImageSelected = (file: Omit<FileType, 'md5'> | null) => {
+    const handleImageSelected = (file: Omit<FileMetadata, 'md5'> | null) => {
       setSelectedImageFile(file)
     }
 
     // Helper function to upload provider image
-    const uploadProviderImage = async (file: Omit<FileType, 'md5'> | null) => {
+    const uploadProviderImage = async (file: Omit<FileMetadata, 'md5'> | null) => {
       if (file) {
         await uploadFiles([file])
       }
@@ -136,7 +135,7 @@ const ProviderSheet = forwardRef<BottomSheetModal, ProviderSheetProps>(
           backgroundColor: isDark ? '#121213ff' : '#f7f7f7ff'
         }}
         handleIndicatorStyle={{
-          backgroundColor: theme.color.val
+          backgroundColor: isDark ? '#f9f9f9ff' : '#202020ff'
         }}
         backdropComponent={renderBackdrop}>
         <BottomSheetView style={{ paddingBottom: insets.bottom }}>

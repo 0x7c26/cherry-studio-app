@@ -1,5 +1,6 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
+import { TouchableOpacity } from 'react-native'
 import { Text, XStack, YStack } from 'tamagui'
 
 interface MenuTabContentProps {
@@ -18,9 +19,9 @@ export function MenuTabContent({ title, onSeeAllPress, children }: MenuTabConten
           <XStack paddingVertical={10} gap={8} alignItems="center">
             <Text>{title}</Text>
           </XStack>
-          <Text color="$textLink" onPress={onSeeAllPress} pressStyle={{ opacity: 0.6 }}>
-            {t('menu.see_all')}
-          </Text>
+          <TouchableOpacity onPress={onSeeAllPress} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Text color="$textLink">{t('menu.see_all')}</Text>
+          </TouchableOpacity>
         </XStack>
       </YStack>
       {children}

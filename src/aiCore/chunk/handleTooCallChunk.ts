@@ -4,15 +4,16 @@
  * 提供工具调用相关的处理API，每个交互使用一个新的实例
  */
 
-import { ProviderMetadata, ToolSet, TypedToolCall, TypedToolResult } from '@cherrystudio/ai-core'
+import type { ProviderMetadata, ToolSet, TypedToolCall, TypedToolResult } from 'ai'
 
 import { loggerService } from '@/services/LoggerService'
 import { Chunk, ChunkType } from '@/types/chunk'
 import { MCPToolResponse, NormalToolResponse } from '@/types/mcp'
 import { BaseTool, MCPTool } from '@/types/tool'
-
-// import { Chunk, ChunkType } from '@/types/chunk'
-// import { MCPToolResponse } from '@/types/mcp'
+// import type {
+//   AnthropicSearchOutput,
+//   WebSearchPluginConfig
+// } from '@cherrystudio/ai-core/core/plugins/built-in/webSearchPlugin'
 
 const logger = loggerService.withContext('ToolCallChunkHandler')
 
@@ -33,7 +34,7 @@ export class ToolCallChunkHandler {
   >()
   constructor(
     private onChunk: (chunk: Chunk) => void,
-    private mcpTools: BaseTool[]
+    private mcpTools: MCPTool[]
   ) {}
 
   //   /**
@@ -162,7 +163,8 @@ export class ToolCallChunkHandler {
       return
     }
 
-    let tool: BaseTool | MCPTool
+    let tool: BaseTool
+    let mcpTool: MCPTool | undefined
 
     // 根据 providerExecuted 标志区分处理逻辑
     if (providerExecuted) {
@@ -183,17 +185,22 @@ export class ToolCallChunkHandler {
         description: toolName,
         type: 'builtin'
       } as BaseTool
-    } else {
+    } else if ((mcpTool = this.mcpTools.find(t => t.name === toolName) as MCPTool)) {
       // 如果是客户端执行的 MCP 工具，沿用现有逻辑
       logger.info(`[ToolCallChunkHandler] Handling client-side MCP tool: ${toolName}`)
-      const mcpTool = this.mcpTools.find(t => t.name === toolName)
-
-      if (!mcpTool) {
-        logger.warn(`[ToolCallChunkHandler] MCP tool not found: ${toolName}`)
-        return
+      // mcpTool = this.mcpTools.find((t) => t.name === toolName) as MCPTool
+      // if (!mcpTool) {
+      //   logger.warn(`[ToolCallChunkHandler] MCP tool not found: ${toolName}`)
+      //   return
+      // }
+      tool = mcpTool
+    } else {
+      tool = {
+        id: toolCallId,
+        name: toolName,
+        description: toolName,
+        type: 'provider'
       }
-
-      tool = mcpTool as MCPTool
     }
 
     // 记录活跃的工具调用
@@ -209,14 +216,14 @@ export class ToolCallChunkHandler {
       id: toolCallId,
       tool: tool,
       arguments: args,
-      status: 'invoking',
+      status: 'pending',
       toolCallId: toolCallId
     }
 
     // 调用 onChunk
     if (this.onChunk) {
       this.onChunk({
-        type: ChunkType.MCP_TOOL_IN_PROGRESS,
+        type: ChunkType.MCP_TOOL_PENDING,
         responses: [toolResponse]
       })
     }
@@ -254,6 +261,7 @@ export class ToolCallChunkHandler {
       response: output,
       toolCallId: toolCallId
     }
+
     // 从活跃调用中移除（交互结束后整个实例会被丢弃）
     this.activeToolCalls.delete(toolCallId)
 

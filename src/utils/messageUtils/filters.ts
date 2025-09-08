@@ -1,7 +1,7 @@
 // May need Block types if refactoring to use them
 // import type { MessageBlock, MainTextMessageBlock } from '@renderer/types/newMessageTypes';
 
-import { isEmpty } from 'lodash'
+import { isEmpty, remove, takeRight } from 'lodash'
 
 import { type GroupedMessage, MainTextMessageBlock, type Message, MessageBlockType } from '@/types/message' // Assuming correct Message type import
 
@@ -34,7 +34,7 @@ export const filterMessages = async (messages: Message[]) => {
 /**
  * Filters messages to include only those after the last 'clear' type message.
  */
-export function filterContextMessages(messages: Message[]): Message[] {
+export function filterAfterContextClearMessages(messages: Message[]): Message[] {
   const clearIndex = messages.findLastIndex(message => message.type === 'clear')
 
   if (clearIndex === -1) {
@@ -117,7 +117,7 @@ export function getGroupedMessages(messages: Message[]): { [key: string]: Groupe
  * Filters messages based on the 'useful' flag and message role sequences.
  */
 export function filterUsefulMessages(messages: Message[]): Message[] {
-  let _messages = [...messages]
+  const _messages = [...messages]
   const groupedMessages = getGroupedMessages(messages)
 
   Object.entries(groupedMessages).forEach(([key, groupedMsgs]) => {
@@ -128,27 +128,17 @@ export function filterUsefulMessages(messages: Message[]): Message[] {
         // Remove all messages in the group except the useful one
         groupedMsgs.forEach(m => {
           if (m.id !== usefulMessage.id) {
-            _messages = _messages.filter(o => o.id !== m.id)
+            remove(_messages, o => o.id === m.id)
           }
         })
       } else if (groupedMsgs.length > 0) {
-        // Keep only the last message if none are marked useful
-        const messagesToRemove = groupedMsgs.slice(0, -1)
+        // Keep only the first message if none are marked useful
+        const messagesToRemove = groupedMsgs.slice(1)
         messagesToRemove.forEach(m => {
-          _messages = _messages.filter(o => o.id !== m.id)
+          remove(_messages, o => o.id === m.id)
         })
       }
     }
-  })
-
-  // Remove trailing assistant messages
-  while (_messages.length > 0 && _messages[_messages.length - 1].role === 'assistant') {
-    _messages.pop()
-  }
-
-  // Filter adjacent user messages, keeping only the last one
-  _messages = _messages.filter((message, index, origin) => {
-    return !(message.role === 'user' && index + 1 < origin.length && origin[index + 1].role === 'user')
   })
 
   return _messages
@@ -172,16 +162,44 @@ export async function filterMainTextMessages(messages: Message[]): Promise<Messa
   return messages.filter((_, index) => results[index])
 }
 
-// Note: getGroupedMessages might also need to be moved or imported.
-// It depends on message.askId which should still exist on the Message type.
-// export function getGroupedMessages(messages: Message[]): { [key: string]: (Message & { index: number })[] } {
-//   const groups: { [key: string]: (Message & { index: number })[] } = {}
-//   messages.forEach((message, index) => {
-//     const key = message.askId ? 'assistant' + message.askId : 'user' + message.id
-//     if (key && !groups[key]) {
-//       groups[key] = []
-//     }
-//     groups[key].unshift({ ...message, index }) // Keep unshift if order matters for useful filter
-//   })
-//   return groups
-// }
+export function filterLastAssistantMessage(messages: Message[]): Message[] {
+  const _messages = [...messages]
+
+  // Remove trailing assistant messages
+  while (_messages.length > 0 && _messages[_messages.length - 1].role === 'assistant') {
+    _messages.pop()
+  }
+
+  return _messages
+}
+
+export function filterAdjacentUserMessaegs(messages: Message[]): Message[] {
+  // Filter adjacent user messages, keeping only the last one
+  return messages.filter((message, index, origin) => {
+    return !(message.role === 'user' && index + 1 < origin.length && origin[index + 1].role === 'user')
+  })
+}
+
+/**
+ * Filters and processes messages based on context requirements
+ * @param messages - Array of messages to be filtered
+ * @param contextCount - Number of messages to keep in context (excluding new user and assistant messages)
+ * @returns Filtered array of messages that:
+ * 1. Only includes messages after the last context clear
+ * 2. Only includes useful message in a group (based on useful flag)
+ * 3. Limited to contextCount + 2 messages (including space for new user/assistant messages)
+ * 4. Starts from first user message
+ * 5. Excludes empty messages
+ */
+export function filterContextMessages(messages: Message[], contextCount: number): Message[] {
+  // NOTE: 和 fetchCompletions 中过滤消息的逻辑相同。
+  // 按理说 fetchCompletions 也可以复用这个函数，不过 fetchCompletions 不敢随便乱改，后面再考虑重构吧
+  const afterContextClearMsgs = filterAfterContextClearMessages(messages)
+  const usefulMsgs = filterUsefulMessages(afterContextClearMsgs)
+  const adjacentRemovedMsgs = filterAdjacentUserMessaegs(usefulMsgs)
+  const filteredMessages = filterUserRoleStartMessages(
+    filterEmptyMessages(takeRight(adjacentRemovedMsgs, contextCount))
+  )
+
+  return filteredMessages
+}

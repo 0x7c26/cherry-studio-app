@@ -31,6 +31,12 @@
       "settings.stream_output": "流式输出",
       "settings.temperature": "温度",
       "settings.top_p": "Top P",
+      "settings.tooluse": {
+        "title": "工具调用方式",
+        "function": "函数调用",
+        "prompt": "提示词调用",
+        "empty": "未设置工具调用方式"
+      },
       "sort": {
         "alphabetical": "按字母顺序的",
         "recent_add": "最近添加",
@@ -104,7 +110,7 @@
       "model": "模型",
       "name": "姓名",
       "ok": "确定",
-      "older": "更老",
+      "older": "更早",
       "others": "其他",
       "photo": "照片",
       "preset": "预设",

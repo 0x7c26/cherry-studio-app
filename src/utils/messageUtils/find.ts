@@ -1,4 +1,4 @@
-import { FileType } from '@/types/file'
+import { FileMetadata } from '@/types/file'
 import {
   type CitationMessageBlock,
   type FileMessageBlock,
@@ -196,8 +196,8 @@ export const getKnowledgeBaseIds = async (message: Message): Promise<string[] | 
  * @param message - The message object.
  * @returns The file content or an empty string if no file blocks are found.
  */
-export const getFileContent = async (message: Message): Promise<FileType[]> => {
-  const files: FileType[] = []
+export const getFileContent = async (message: Message): Promise<FileMetadata[]> => {
+  const files: FileMetadata[] = []
   const fileBlocks = await findFileBlocks(message)
 
   for (const block of fileBlocks) {

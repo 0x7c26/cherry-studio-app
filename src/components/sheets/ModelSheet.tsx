@@ -5,16 +5,15 @@ import debounce from 'lodash/debounce'
 import { forwardRef, useEffect, useState } from 'react'
 import React from 'react'
 import { useTranslation } from 'react-i18next'
-import { BackHandler } from 'react-native'
+import { BackHandler, useWindowDimensions } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Button, Stack, Text, useTheme, View, XStack, YStack } from 'tamagui'
+import { Button, Stack, Text, View, XStack, YStack } from 'tamagui'
 
 import { ModelIcon } from '@/components/ui/ModelIcon'
 import { ModelTags } from '@/components/ui/ModelTags'
-import { isEmbeddingModel } from '@/config/models/embedding'
-import { isRerankModel } from '@/config/models/rerank'
+import { isEmbeddingModel, isRerankModel } from '@/config/models'
 import { useAllProviders } from '@/hooks/useProviders'
-import { useTheme as useCustomTheme } from '@/hooks/useTheme'
+import { useTheme } from '@/hooks/useTheme'
 import { Model } from '@/types/assistant'
 import { getModelUniqId } from '@/utils/model'
 
@@ -29,13 +28,13 @@ interface ModelSheetProps {
 
 const ModelSheet = forwardRef<BottomSheetModal, ModelSheetProps>(({ mentions, setMentions, multiple }, ref) => {
   const { t } = useTranslation()
-  const theme = useTheme()
-  const { isDark } = useCustomTheme()
+  const { isDark } = useTheme()
   const [selectedModels, setSelectedModels] = useState<string[]>(() => mentions.map(m => getModelUniqId(m)))
   const [inputValue, setInputValue] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
   const [isMultiSelectActive, setIsMultiSelectActive] = useState(false)
   const insets = useSafeAreaInsets()
+  const dimensions = useWindowDimensions()
 
   // 处理Android返回按钮事件
   useEffect(() => {
@@ -147,7 +146,6 @@ const ModelSheet = forwardRef<BottomSheetModal, ModelSheetProps>(({ mentions, se
 
   return (
     <BottomSheetModal
-      snapPoints={['50%']}
       enableDynamicSizing={true}
       ref={ref}
       backgroundStyle={{
@@ -155,11 +153,12 @@ const ModelSheet = forwardRef<BottomSheetModal, ModelSheetProps>(({ mentions, se
         backgroundColor: isDark ? '#121213ff' : '#f7f7f7ff'
       }}
       handleIndicatorStyle={{
-        backgroundColor: theme.color.val
+        backgroundColor: isDark ? '#f9f9f9ff' : '#202020ff'
       }}
       backdropComponent={renderBackdrop}
       enablePanDownToClose={true}
-      android_keyboardInputMode="adjustResize">
+      android_keyboardInputMode="adjustResize"
+      maxDynamicContentSize={dimensions.height - 2 * insets.top}>
       <BottomSheetScrollView showsVerticalScrollIndicator={false} style={{ paddingBottom: insets.bottom }}>
         <YStack gap={16} paddingHorizontal={20} paddingBottom={20}>
           <XStack gap={5} flex={1} alignItems="center" justifyContent="center">

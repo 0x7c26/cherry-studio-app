@@ -3,8 +3,7 @@ import { DrawerActions, useNavigation } from '@react-navigation/native'
 import { FlashList } from '@shopify/flash-list'
 import { Menu } from '@tamagui/lucide-icons'
 import { ImpactFeedbackStyle } from 'expo-haptics'
-import { debounce } from 'lodash'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useCallback, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 import { Text, YStack } from 'tamagui'
@@ -19,6 +18,7 @@ import { DrawerGestureWrapper } from '@/components/ui/DrawerGestureWrapper'
 import SafeAreaContainer from '@/components/ui/SafeAreaContainer'
 import { SearchInput } from '@/components/ui/SearchInput'
 import { useExternalAssistants } from '@/hooks/useAssistant'
+import { useSearch } from '@/hooks/useSearch'
 import { useTopics } from '@/hooks/useTopic'
 import { createAssistant } from '@/services/AssistantService'
 import { Assistant } from '@/types/assistant'
@@ -30,32 +30,18 @@ export default function AssistantScreen() {
   const { t } = useTranslation()
   const navigation = useNavigation<DrawerNavigationProps>()
 
-  // 搜索状态
-  const [searchText, setSearchText] = useState('')
-  const [debouncedSearchText, setDebouncedSearchText] = useState('')
-
-  // 创建防抖函数，300ms 延迟
-  const debouncedSetSearch = debounce((text: string) => {
-    setDebouncedSearchText(text)
-  }, 300)
-
   const { topics } = useTopics()
   const { assistants, isLoading } = useExternalAssistants()
   const assistantWithTopics = getAssistantWithTopic(assistants, topics)
-  // 监听 searchText 变化，触发防抖更新
-  useEffect(() => {
-    debouncedSetSearch(searchText)
 
-    // 清理函数，组件卸载时取消防抖
-    return () => {
-      debouncedSetSearch.cancel()
-    }
-  })
-
-  const filteredAssistants = assistantWithTopics.filter(
-    assistant =>
-      assistant.name.toLowerCase().includes(debouncedSearchText.toLowerCase()) ||
-      assistant.description?.toLowerCase().includes(debouncedSearchText.toLowerCase())
+  const {
+    searchText,
+    setSearchText,
+    filteredItems: filteredAssistants
+  } = useSearch(
+    assistantWithTopics,
+    useCallback((assistant: Assistant) => [assistant.name, assistant.description || ''], []),
+    { delay: 300 }
   )
 
   const bottomSheetRef = useRef<BottomSheetModal>(null)

@@ -34,6 +34,7 @@ export default function DataSourcesStackNavigator() {
     <Stack.Navigator
       screenOptions={{
         headerShown: false,
+        gestureResponseDistance: 9999,
         ...TransitionPresets.SlideFromRightIOS
       }}>
       <Stack.Screen name="DataSettingsScreen" component={DataSettingsScreen} />

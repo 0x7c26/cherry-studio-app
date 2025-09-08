@@ -1,16 +1,12 @@
-import {
-  extractReasoningMiddleware,
-  LanguageModelV2Middleware,
-  simulateStreamingMiddleware
-} from '@cherrystudio/ai-core'
+import { extractReasoningMiddleware, LanguageModelMiddleware, simulateStreamingMiddleware } from 'ai'
 
 import { loggerService } from '@/services/LoggerService'
-import { Assistant, Model, Provider } from '@/types/assistant'
+import { Model, Provider } from '@/types/assistant'
 import { Chunk } from '@/types/chunk'
-import { BaseTool } from '@/types/tool'
+import { Message } from '@/types/message'
+import { MCPTool } from '@/types/tool'
 
 const logger = loggerService.withContext('AiSdkMiddlewareBuilder')
-
 /**
  * AI SDK 中间件配置项
  */
@@ -28,9 +24,8 @@ export interface AiSdkMiddlewareConfig {
   isImageGenerationEndpoint: boolean
   enableWebSearch: boolean
   enableGenerateImage: boolean
-  mcpTools?: BaseTool[]
-  // TODO assistant
-  assistant: Assistant
+  mcpTools?: MCPTool[]
+  uiMessages?: Message[]
 }
 
 /**
@@ -38,7 +33,7 @@ export interface AiSdkMiddlewareConfig {
  */
 export interface NamedAiSdkMiddleware {
   name: string
-  middleware: LanguageModelV2Middleware
+  middleware: LanguageModelMiddleware
 }
 
 /**
@@ -65,7 +60,7 @@ export class AiSdkMiddlewareBuilder {
     if (index !== -1) {
       this.middlewares.splice(index + 1, 0, middleware)
     } else {
-      console.warn(`AiSdkMiddlewareBuilder: 未找到名为 '${targetName}' 的中间件，无法插入`)
+      logger.warn(`AiSdkMiddlewareBuilder: Middleware named '${targetName}' not found, cannot insert`)
     }
 
     return this
@@ -89,7 +84,7 @@ export class AiSdkMiddlewareBuilder {
   /**
    * 构建最终的中间件数组
    */
-  public build(): LanguageModelV2Middleware[] {
+  public build(): LanguageModelMiddleware[] {
     return this.middlewares.map(m => m.middleware)
   }
 
@@ -120,7 +115,7 @@ export class AiSdkMiddlewareBuilder {
  * 根据配置构建AI SDK中间件的工厂函数
  * 这里要注意构建顺序，因为有些中间件需要依赖其他中间件的结果
  */
-export function buildAiSdkMiddlewares(config: AiSdkMiddlewareConfig): LanguageModelV2Middleware[] {
+export function buildAiSdkMiddlewares(config: AiSdkMiddlewareConfig): LanguageModelMiddleware[] {
   const builder = new AiSdkMiddlewareBuilder()
 
   // 1. 根据provider添加特定中间件
@@ -141,7 +136,7 @@ export function buildAiSdkMiddlewares(config: AiSdkMiddlewareConfig): LanguageMo
     })
   }
 
-  console.log('builder.build()', builder.buildNamed())
+  logger.info('builder.build()', builder.buildNamed())
   return builder.build()
 }
 
@@ -184,7 +179,7 @@ function addProviderSpecificMiddlewares(builder: AiSdkMiddlewareBuilder, config:
 /**
  * 添加模型特定的中间件
  */
-function addModelSpecificMiddlewares(builder: AiSdkMiddlewareBuilder, config: AiSdkMiddlewareConfig): void {
+function addModelSpecificMiddlewares(_: AiSdkMiddlewareBuilder, config: AiSdkMiddlewareConfig): void {
   if (!config.model) return
 
   // 可以根据模型ID或特性添加特定中间件

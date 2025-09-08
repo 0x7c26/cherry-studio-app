@@ -8,7 +8,8 @@ export const markdownColors = {
     border: '#e1e7e8',
     text: '#202020ff',
     link: '#00b96b',
-    codeBg: 'transparent',
+    codeBg: 'rgba(0, 0, 0, 0.03)',
+    codeBorder: 'rgba(0, 0, 0, 0.05)',
     code: '#00b96b',
     codeBlockBg: '#f7f6f3'
   },
@@ -19,7 +20,8 @@ export const markdownColors = {
     border: '#3d3d3d',
     text: '#f9f9f9ff',
     link: '#00b96b',
-    codeBg: 'transparent',
+    codeBg: 'rgba(255, 255, 255, 0.05)',
+    codeBorder: 'rgba(255, 255, 255, 0.1)',
     code: '#00b96b',
     codeBlockBg: '#202020'
   }

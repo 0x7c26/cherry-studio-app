@@ -1,8 +1,8 @@
-import { File as ExpoFile } from 'expo-file-system/next'
+import { File } from 'expo-file-system/next'
 import OpenAI from 'openai'
 import { toFile } from 'openai/uploads'
 
-import { isDedicatedImageGenerationModel } from '@/config/models/image'
+import { isDedicatedImageGenerationModel } from '@/config/models'
 import { defaultTimeout } from '@/constants'
 import { ChunkType } from '@/types/chunk'
 import { findImageBlocks, getMainTextContent } from '@/utils/messageUtils/find'
@@ -50,10 +50,9 @@ export const ImageGenerationMiddleware: CompletionsMiddleware =
           const userImages = await Promise.all(
             userImageBlocks.map(async block => {
               if (!block.file) return null
-              const image = new ExpoFile(block.file.path)
-              return await toFile(new Blob([image.bytes()]), block.file.origin_name || 'image.png', {
-                type: image.type ?? 'image/png'
-              })
+              const binaryData: Uint8Array = new File(block.file.path).bytes()
+              const mimeType = `${block.file.type}/${block.file.ext.slice(1)}`
+              return await toFile(new Blob([binaryData]), block.file.origin_name || 'image.png', { type: mimeType })
             })
           )
           imageFiles = imageFiles.concat(userImages.filter(Boolean) as Blob[])

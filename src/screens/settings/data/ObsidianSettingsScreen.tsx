@@ -1,8 +1,7 @@
-import { useNavigation } from '@react-navigation/native'
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { Text } from 'react-native'
-import { useTheme, XStack, YStack } from 'tamagui'
+import { XStack, YStack } from 'tamagui'
 
 import { SettingContainer, SettingGroupTitle } from '@/components/settings'
 import { HeaderBar } from '@/components/settings/HeaderBar'
@@ -10,8 +9,6 @@ import SafeAreaContainer from '@/components/ui/SafeAreaContainer'
 
 export default function ObsidianSettingsScreen() {
   const { t } = useTranslation()
-  const theme = useTheme()
-  const navigation = useNavigation()
 
   return (
     <SafeAreaContainer style={{ flex: 1 }}>

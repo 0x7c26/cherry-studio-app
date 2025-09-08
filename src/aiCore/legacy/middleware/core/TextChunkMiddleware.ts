@@ -3,9 +3,10 @@ import { ChunkType } from '@/types/chunk'
 
 import { CompletionsParams, CompletionsResult, GenericChunk } from '../schemas'
 import { CompletionsContext, CompletionsMiddleware } from '../types'
-const logger = loggerService.withContext('TextChunkMiddleware')
 
 export const MIDDLEWARE_NAME = 'TextChunkMiddleware'
+
+const logger = loggerService.withContext('TextChunkMiddleware')
 
 /**
  * 文本块处理中间件
@@ -33,7 +34,7 @@ export const TextChunkMiddleware: CompletionsMiddleware =
         const model = params.assistant?.model
 
         if (!assistant || !model) {
-          logger.warn(`[${MIDDLEWARE_NAME}] Missing assistant or model information, skipping text processing`)
+          logger.warn(`Missing assistant or model information, skipping text processing`)
           return result
         }
 
@@ -42,8 +43,14 @@ export const TextChunkMiddleware: CompletionsMiddleware =
         const enhancedTextStream = resultFromUpstream.pipeThrough(
           new TransformStream<GenericChunk, GenericChunk>({
             transform(chunk: GenericChunk, controller) {
+              logger.silly('chunk', chunk)
+
               if (chunk.type === ChunkType.TEXT_DELTA) {
-                accumulatedTextContent += chunk.text
+                if (model.supported_text_delta === false) {
+                  accumulatedTextContent = chunk.text
+                } else {
+                  accumulatedTextContent += chunk.text
+                }
 
                 // 处理 onResponse 回调 - 发送增量文本更新
                 if (params.onResponse) {
@@ -95,7 +102,7 @@ export const TextChunkMiddleware: CompletionsMiddleware =
           stream: enhancedTextStream
         }
       } else {
-        logger.warn(`[${MIDDLEWARE_NAME}] No stream to process or not a ReadableStream. Returning original result.`)
+        logger.warn(`No stream to process or not a ReadableStream. Returning original result.`)
       }
     }
 

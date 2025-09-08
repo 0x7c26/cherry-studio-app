@@ -4,7 +4,6 @@ import { Message } from '@/types/message'
 
 import { fetchChatCompletion } from './ApiService'
 import { ConversationService } from './ConversationService'
-
 /**
  * The request object for handling a user message.
  */
@@ -16,12 +15,14 @@ export interface OrchestrationRequest {
     timeout?: number
     headers?: Record<string, string>
   }
+  topicId?: string // 添加 topicId 用于 trace
 }
 
 /**
  * The OrchestrationService is responsible for orchestrating the different services
  * to handle a user's message. It contains the core logic of the application.
  */
+// NOTE：暂时没有用到这个类
 export class OrchestrationService {
   constructor() {
     // In the future, this could be a singleton, but for now, a new instance is fine.
@@ -34,22 +35,55 @@ export class OrchestrationService {
    * and orchestrates the call to the LLM.
    * The logic is moved from `messageThunk.ts`.
    * @param request The orchestration request containing messages and assistant info.
-   * @param onChunkReceived
+   * @param events A set of callbacks to report progress and results to the UI layer.
    */
-  async handleUserMessage(request: OrchestrationRequest, onChunkReceived: (chunk: Chunk) => void) {
+  async transformMessagesAndFetch(request: OrchestrationRequest, onChunkReceived: (chunk: Chunk) => void) {
     const { messages, assistant } = request
 
     try {
-      const llmMessages = await ConversationService.prepareMessagesForLlm(messages, assistant)
+      const { modelMessages, uiMessages } = await ConversationService.prepareMessagesForModel(messages, assistant)
 
       await fetchChatCompletion({
-        messages: llmMessages,
+        messages: modelMessages,
         assistant: assistant,
         options: request.options,
-        onChunkReceived
+        onChunkReceived,
+        topicId: request.topicId,
+        uiMessages: uiMessages
       })
     } catch (error: any) {
       onChunkReceived({ type: ChunkType.ERROR, error })
     }
+  }
+}
+
+/**
+ * 将用户消息转换为LLM可以理解的格式并发送请求
+ * @param request - 包含消息内容和助手信息的请求对象
+ * @param onChunkReceived - 接收流式响应数据的回调函数
+ */
+// 目前先按照函数来写,后续如果有需要到class的地方就改回来
+export async function transformMessagesAndFetch(
+  request: OrchestrationRequest,
+  onChunkReceived: (chunk: Chunk) => void
+) {
+  const { messages, assistant } = request
+
+  try {
+    const { modelMessages, uiMessages } = await ConversationService.prepareMessagesForModel(messages, assistant)
+
+    // replace prompt variables
+    // assistant.prompt = await replacePromptVariables(assistant.prompt, assistant.model?.name)
+
+    await fetchChatCompletion({
+      messages: modelMessages,
+      assistant: assistant,
+      options: request.options,
+      onChunkReceived,
+      topicId: request.topicId,
+      uiMessages
+    })
+  } catch (error: any) {
+    onChunkReceived({ type: ChunkType.ERROR, error })
   }
 }

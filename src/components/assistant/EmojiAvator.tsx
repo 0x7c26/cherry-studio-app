@@ -1,5 +1,6 @@
 import { BlurView } from 'expo-blur'
 import React from 'react'
+import { Platform } from 'react-native'
 import { Stack, Text, View } from 'tamagui'
 
 import { useTheme } from '@/hooks/useTheme'
@@ -52,6 +53,7 @@ const EmojiAvatar = ({
       {/* BlurView模糊层 */}
       <BlurView
         intensity={blurIntensity}
+        experimentalBlurMethod={Platform.OS === 'android' ? 'dimezisBlurView' : 'none'}
         tint={isDark ? 'dark' : 'light'}
         style={{
           position: 'absolute',

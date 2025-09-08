@@ -5,9 +5,9 @@ import { ResponseChunkTransformerContext } from '../../clients/types'
 import { CompletionsParams, CompletionsResult, GenericChunk } from '../schemas'
 import { CompletionsContext, CompletionsMiddleware } from '../types'
 
-const logger = loggerService.withContext('ResponseTransformMiddleware')
-
 export const MIDDLEWARE_NAME = 'ResponseTransformMiddleware'
+
+const logger = loggerService.withContext('ResponseTransformMiddleware')
 
 /**
  * 响应转换中间件
@@ -35,7 +35,7 @@ export const ResponseTransformMiddleware: CompletionsMiddleware =
         const apiClient = ctx.apiClientInstance
 
         if (!apiClient) {
-          logger.error('ApiClient instance not found in context')
+          logger.error(`ApiClient instance not found in context`)
           throw new Error('ApiClient instance not found in context')
         }
 
@@ -43,7 +43,7 @@ export const ResponseTransformMiddleware: CompletionsMiddleware =
         const responseChunkTransformer = apiClient.getResponseChunkTransformer(ctx)
 
         if (!responseChunkTransformer) {
-          logger.warn(`[${MIDDLEWARE_NAME}] No ResponseChunkTransformer available, skipping transformation`)
+          logger.warn(`No ResponseChunkTransformer available, skipping transformation`)
           return result
         }
 
@@ -51,7 +51,7 @@ export const ResponseTransformMiddleware: CompletionsMiddleware =
         const model = assistant?.model
 
         if (!assistant || !model) {
-          console.error(`[${MIDDLEWARE_NAME}] Assistant or Model not found for transformation`)
+          logger.error(`Assistant or Model not found for transformation`)
           throw new Error('Assistant or Model not found for transformation')
         }
 
@@ -65,7 +65,7 @@ export const ResponseTransformMiddleware: CompletionsMiddleware =
           provider: ctx.apiClientInstance?.provider
         }
 
-        logger.info('Transforming raw SDK chunks with context:', transformerContext)
+        logger.debug(`Transforming raw SDK chunks with context:`, transformerContext)
 
         try {
           // 创建转换后的流
@@ -79,7 +79,7 @@ export const ResponseTransformMiddleware: CompletionsMiddleware =
             stream: genericChunkTransformStream
           }
         } catch (error) {
-          logger.error('Error during chunk transformation:', error)
+          logger.error('Error during chunk transformation:', error as Error)
           throw error
         }
       }

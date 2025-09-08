@@ -9,13 +9,13 @@ import { HeaderBar } from '@/components/settings/HeaderBar'
 import SafeAreaContainer from '@/components/ui/SafeAreaContainer'
 import { useRestore } from '@/hooks/useRestore'
 import { useWebSocket, WebSocketStatus } from '@/hooks/useWebSocket'
-import { NavigationProps } from '@/types/naviagate'
+import { DataSourcesNavigationProps } from '@/types/naviagate'
 
 import { QRCodeScanner } from './QRCodeScanner'
 
 export default function LandropSettingsScreen() {
   const { t } = useTranslation()
-  const navigation = useNavigation<NavigationProps>()
+  const navigation = useNavigation<DataSourcesNavigationProps>()
   const { status, filename, connect } = useWebSocket()
   const [scannedIP, setScannedIP] = useState<string | null>(null)
   const { isModalOpen, restoreSteps, overallStatus, startRestore, closeModal } = useRestore()

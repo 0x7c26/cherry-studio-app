@@ -1,5 +1,4 @@
 import { useNavigation } from '@react-navigation/native'
-import type { StackNavigationProp } from '@react-navigation/stack'
 import { ChevronRight, Edit3, Trash2 } from '@tamagui/lucide-icons'
 import React from 'react'
 import { useTranslation } from 'react-i18next'
@@ -7,9 +6,9 @@ import { Alert } from 'react-native'
 import { Text, XStack } from 'tamagui'
 import * as ContextMenu from 'zeego/context-menu'
 
-import { ProvidersStackParamList } from '@/navigators/settings/ProvidersStackNavigator'
 import { deleteProvider } from '@/services/ProviderService'
 import { Provider } from '@/types/assistant'
+import { HomeNavigationProps } from '@/types/naviagate'
 
 import { ProviderIcon } from '../../ui/ProviderIcon'
 import { PressableSettingRow } from '..'
@@ -22,7 +21,7 @@ interface ProviderItemProps {
 
 export const ProviderItem: React.FC<ProviderItemProps> = ({ provider, mode = 'enabled', onEdit }) => {
   const { t } = useTranslation()
-  const navigation = useNavigation<StackNavigationProp<ProvidersStackParamList>>()
+  const navigation = useNavigation<HomeNavigationProps>()
 
   // Determine display conditions and text based on mode
   const shouldShowStatus = mode === 'enabled' ? provider.enabled : provider.apiKey
@@ -54,10 +53,16 @@ export const ProviderItem: React.FC<ProviderItemProps> = ({ provider, mode = 'en
   }
 
   const providerRow = (
-    <PressableSettingRow onPress={() => navigation.navigate('ProviderSettingsScreen', { providerId: provider.id })}>
+    <PressableSettingRow
+      onPress={() =>
+        navigation.navigate('ProvidersSettings', {
+          screen: 'ProviderSettingsScreen',
+          params: { providerId: provider.id }
+        })
+      }>
       <XStack gap={5} alignItems="center">
         <ProviderIcon provider={provider} />
-        <Text>{t(`provider.${provider.id}`, { defaultValue: provider.name })}</Text>
+        <Text fontSize={16}>{t(`provider.${provider.id}`, { defaultValue: provider.name })}</Text>
       </XStack>
       <XStack gap={10} alignItems="center">
         {shouldShowStatus && (
@@ -92,7 +97,7 @@ export const ProviderItem: React.FC<ProviderItemProps> = ({ provider, mode = 'en
             <Edit3 size={16} color="$blue10" />
           </ContextMenu.ItemIcon>
         </ContextMenu.Item>
-        <ContextMenu.Item key="delete" onSelect={handleDelete}>
+        <ContextMenu.Item key="delete" onSelect={handleDelete} destructive>
           <ContextMenu.ItemTitle>{t('common.delete')}</ContextMenu.ItemTitle>
           <ContextMenu.ItemIcon ios={{ name: 'trash' }}>
             <Trash2 size={16} color="red" />

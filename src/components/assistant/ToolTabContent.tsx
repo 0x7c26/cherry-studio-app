@@ -1,5 +1,5 @@
 import { BottomSheetModal } from '@gorhom/bottom-sheet'
-import { ChevronRight } from '@tamagui/lucide-icons'
+import { ChevronRight, SquareFunction, Wrench } from '@tamagui/lucide-icons'
 import { MotiView } from 'moti'
 import React, { useRef } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -9,6 +9,7 @@ import { useWebsearchProviders } from '@/hooks/useWebsearchProviders'
 import { Assistant } from '@/types/assistant'
 
 import { SettingRowTitle } from '../settings'
+import ToolUseSheet from '../sheets/ToolUseSheet'
 import WebsearchSheet from '../sheets/WebsearchSheet'
 import { WebsearchProviderIcon } from '../ui/WebsearchIcon'
 
@@ -19,11 +20,16 @@ interface ToolTabContentProps {
 
 export function ToolTabContent({ assistant, updateAssistant }: ToolTabContentProps) {
   const { t } = useTranslation()
-  const bottomSheetModalRef = useRef<BottomSheetModal>(null)
+  const toolUseSheetRef = useRef<BottomSheetModal>(null)
+  const websearchSheetRef = useRef<BottomSheetModal>(null)
   const { apiProviders } = useWebsearchProviders()
 
-  const handlePress = () => {
-    bottomSheetModalRef.current?.present()
+  const handleToolUsePress = () => {
+    toolUseSheetRef.current?.present()
+  }
+
+  const handleWebsearchPress = () => {
+    websearchSheetRef.current?.present()
   }
 
   const provider = apiProviders.find(p => p.id === assistant.webSearchProviderId)
@@ -41,6 +47,34 @@ export function ToolTabContent({ assistant, updateAssistant }: ToolTabContentPro
         type: 'timing'
       }}>
       <YStack gap={5}>
+        <SettingRowTitle>{t('assistants.settings.tooluse.title')}</SettingRowTitle>
+        <Button
+          chromeless
+          height={30}
+          paddingHorizontal={16}
+          paddingVertical={23}
+          iconAfter={<ChevronRight size={16} />}
+          backgroundColor="$uiCardBackground"
+          onPress={handleToolUsePress}>
+          <XStack height={20} flex={1} alignItems="center" overflow="hidden" justifyContent="space-between">
+            <XStack maxWidth="45%" gap={5}>
+              {assistant.settings?.toolUseMode ? (
+                <XStack gap={8} flex={1} alignItems="center" maxWidth="80%">
+                  {/* ToolUse icon */}
+                  {assistant.settings.toolUseMode === 'function' ? <SquareFunction size={20} /> : <Wrench size={20} />}
+                  {/* ToolUse */}
+                  <Text lineHeight={20} numberOfLines={1} ellipsizeMode="tail" flex={1}>
+                    {t(`assistants.settings.tooluse.${assistant.settings?.toolUseMode}`)}
+                  </Text>
+                </XStack>
+              ) : (
+                <Text lineHeight={20} flex={1} numberOfLines={1} ellipsizeMode="tail">
+                  {t('assistants.settings.tooluse.empty')}
+                </Text>
+              )}
+            </XStack>
+          </XStack>
+        </Button>
         <SettingRowTitle>{t('settings.websearch.provider.title')}</SettingRowTitle>
         <Button
           chromeless
@@ -49,7 +83,7 @@ export function ToolTabContent({ assistant, updateAssistant }: ToolTabContentPro
           paddingVertical={23}
           iconAfter={<ChevronRight size={16} />}
           backgroundColor="$uiCardBackground"
-          onPress={handlePress}>
+          onPress={handleWebsearchPress}>
           <XStack height={20} flex={1} alignItems="center" overflow="hidden" justifyContent="space-between">
             <XStack maxWidth="45%" gap={5}>
               {provider ? (
@@ -72,8 +106,9 @@ export function ToolTabContent({ assistant, updateAssistant }: ToolTabContentPro
           </XStack>
         </Button>
       </YStack>
+      <ToolUseSheet ref={toolUseSheetRef} assistant={assistant} updateAssistant={updateAssistant} />
       <WebsearchSheet
-        ref={bottomSheetModalRef}
+        ref={websearchSheetRef}
         assistant={assistant}
         updateAssistant={updateAssistant}
         providers={apiProviders.filter(p => p.apiKey)}

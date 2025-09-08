@@ -2,7 +2,7 @@ import * as FileSystem from 'expo-file-system'
 import { Directory, File, Paths } from 'expo-file-system/next'
 
 import { loggerService } from '@/services/LoggerService'
-import { FileType, FileTypes } from '@/types/file'
+import { FileMetadata, FileTypes } from '@/types/file'
 import { uuid } from '@/utils'
 
 import { deleteFileById, getAllFiles, getFileById, upsertFiles } from '../../db/queries/files.queries'
@@ -19,15 +19,15 @@ async function ensureDirExists() {
   }
 }
 
-export function readFile(file: FileType): string {
+export function readFile(file: FileMetadata): string {
   return new File(file.path).text()
 }
 
-export function readBase64File(file: FileType): string {
+export function readBase64File(file: FileMetadata): string {
   return new File(file.path).base64()
 }
 
-export async function writeBase64File(data: string): Promise<FileType> {
+export async function writeBase64File(data: string): Promise<FileMetadata> {
   if (!fileStorageDir.exists) {
     fileStorageDir.create({ intermediates: true, overwrite: true })
   }
@@ -49,22 +49,20 @@ export async function writeBase64File(data: string): Promise<FileType> {
     size: 0,
     ext: '.png',
     type: FileTypes.IMAGE,
-    mime_type: 'image/png',
     created_at: '',
-    count: 1,
-    md5: ''
+    count: 1
   }
 }
 
-export function readBinaryFile(file: FileType): Blob {
+export function readBinaryFile(file: FileMetadata): Blob {
   return new File(file.path).blob()
 }
 
-export function readStreamFile(file: FileType): ReadableStream {
+export function readStreamFile(file: FileMetadata): ReadableStream {
   return new File(file.path).readableStream()
 }
 
-export async function uploadFiles(files: Omit<FileType, 'md5'>[]): Promise<FileType[]> {
+export async function uploadFiles(files: Omit<FileMetadata, 'md5'>[]): Promise<FileMetadata[]> {
   await ensureDirExists()
   const filePromises = files.map(async file => {
     try {
@@ -85,11 +83,10 @@ export async function uploadFiles(files: Omit<FileType, 'md5'>[]): Promise<FileT
         throw new Error('Failed to copy file or get info.')
       }
 
-      const finalFile: FileType = {
+      const finalFile: FileMetadata = {
         ...file,
         path: destinationUri,
-        size: fileInfo.size,
-        md5: fileInfo.md5 || ''
+        size: fileInfo.size
       }
       upsertFiles([finalFile])
       return finalFile
@@ -121,7 +118,7 @@ async function deleteFile(id: string, force: boolean = false): Promise<void> {
   }
 }
 
-export async function deleteFiles(files: FileType[]): Promise<void> {
+export async function deleteFiles(files: FileMetadata[]): Promise<void> {
   await Promise.all(files.map(file => deleteFile(file.id)))
 }
 

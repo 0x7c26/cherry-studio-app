@@ -46,7 +46,7 @@ export function HeaderBar({ title, leftButton, rightButton, rightButtons, showBa
 
       {/* 居中标题 */}
       <XStack flex={1} justifyContent="center" alignItems="center">
-        <Text fontSize="$6" fontWeight="bold" textAlign="center">
+        <Text color="$textPrimary" fontSize={18} fontWeight="bold" textAlign="center">
           {title}
         </Text>
       </XStack>

@@ -1,13 +1,13 @@
 import React from 'react'
 import { ScrollView } from 'tamagui'
 
-import { FileType } from '@/types/file'
+import { FileMetadata } from '@/types/file'
 
 import PreviewItem from './preview-items/PreviewItem'
 
 interface FilePreviewProps {
-  files: FileType[]
-  setFiles: (files: FileType[]) => void
+  files: FileMetadata[]
+  setFiles: (files: FileMetadata[]) => void
 }
 
 const FilePreview: React.FC<FilePreviewProps> = ({ files, setFiles }) => {

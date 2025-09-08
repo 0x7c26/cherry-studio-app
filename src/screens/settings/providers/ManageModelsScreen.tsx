@@ -1,8 +1,8 @@
 import { RouteProp, useRoute } from '@react-navigation/native'
 import { FlashList, ListRenderItemInfo } from '@shopify/flash-list'
 import { Minus, Plus } from '@tamagui/lucide-icons'
-import { debounce, groupBy, isEmpty, uniqBy } from 'lodash'
-import React, { useEffect, useState } from 'react'
+import { groupBy, isEmpty, uniqBy } from 'lodash'
+import React, { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ActivityIndicator } from 'react-native'
 import { Accordion, Button, ScrollView, Tabs, Text, YStack } from 'tamagui'
@@ -12,13 +12,17 @@ import { HeaderBar } from '@/components/settings/HeaderBar'
 import { ModelGroup } from '@/components/settings/providers/ModelGroup'
 import SafeAreaContainer from '@/components/ui/SafeAreaContainer'
 import { SearchInput } from '@/components/ui/SearchInput'
-import { groupQwenModels, isFreeModel } from '@/config/models'
-import { isEmbeddingModel } from '@/config/models/embedding'
-import { isFunctionCallingModel } from '@/config/models/functionCalling'
-import { isReasoningModel } from '@/config/models/reasoning'
-import { isRerankModel } from '@/config/models/rerank'
-import { isVisionModel } from '@/config/models/vision'
-import { isWebSearchModel } from '@/config/models/webSearch'
+import {
+  groupQwenModels,
+  isEmbeddingModel,
+  isFunctionCallingModel,
+  isReasoningModel,
+  isRerankModel,
+  isVisionModel,
+  isWebSearchModel
+} from '@/config/models'
+import { isFreeModel } from '@/config/models/free'
+import { useSearch } from '@/hooks/useSearch'
 import { ProvidersStackParamList } from '@/navigators/settings/ProvidersStackNavigator'
 import { fetchModels } from '@/services/ApiService'
 import { loggerService } from '@/services/LoggerService'
@@ -107,16 +111,9 @@ export default function ManageModelsScreen() {
   const { t } = useTranslation()
   const route = useRoute<ProviderSettingsRouteProp>()
 
-  const [searchText, setSearchText] = useState('')
-  const [debouncedSearchText, setDebouncedSearchText] = useState('')
   const [allModels, setAllModels] = useState<Model[]>([])
   const [activeFilterType, setActiveFilterType] = useState<string>('all')
   const [isLoading, setIsLoading] = useState(true)
-
-  // 创建防抖函数，300ms 延迟
-  const debouncedSetSearch = debounce((text: string) => {
-    setDebouncedSearchText(text)
-  }, 300)
 
   const { providerId } = route.params
   const [provider, setProvider] = useState<Provider | undefined>(undefined)
@@ -125,18 +122,18 @@ export default function ManageModelsScreen() {
   const isModelInCurrentProvider = getIsModelInProvider(provider?.models || [])
   const isAllModelsInCurrentProvider = getIsAllInProvider(isModelInCurrentProvider)
 
-  const filteredModels = filterModels(allModels, debouncedSearchText, activeFilterType)
+  const {
+    searchText,
+    setSearchText,
+    filteredItems: searchFilteredModels
+  } = useSearch(
+    allModels,
+    useCallback((model: Model) => [model.id, model.name || ''], []),
+    { delay: 300 }
+  )
+
+  const filteredModels = filterModels(searchFilteredModels, '', activeFilterType)
   const sortedModelGroups = groupAndSortModels(filteredModels, provider?.id || '')
-
-  // 监听 searchText 变化，触发防抖更新
-  useEffect(() => {
-    debouncedSetSearch(searchText)
-
-    // 清理函数，组件卸载时取消防抖
-    return () => {
-      debouncedSetSearch.cancel()
-    }
-  })
 
   const handleUpdateModels = async (newModels: Model[]) => {
     if (!provider) return

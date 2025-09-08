@@ -4,9 +4,9 @@ import React, { forwardRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { BackHandler } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Button, Spinner, Text, useTheme, View, XStack, YStack } from 'tamagui'
+import { Button, Spinner, Text, View, XStack, YStack } from 'tamagui'
 
-import { useTheme as useCustomTheme } from '@/hooks/useTheme'
+import { useTheme } from '@/hooks/useTheme'
 import { ApiStatus, Model } from '@/types/assistant'
 import { getModelUniqId } from '@/utils/model'
 
@@ -35,8 +35,7 @@ const renderBackdrop = (props: any) => (
 export const ApiCheckSheet = forwardRef<BottomSheetModal, ApiCheckSheetProps>(
   ({ selectedModel, onModelChange, selectOptions, onStartModelCheck, checkApiStatus }, ref) => {
     const { t } = useTranslation()
-    const theme = useTheme()
-    const { isDark } = useCustomTheme()
+    const { isDark } = useTheme()
     const insets = useSafeAreaInsets()
 
     // 处理Android返回按钮事件
@@ -65,7 +64,7 @@ export const ApiCheckSheet = forwardRef<BottomSheetModal, ApiCheckSheetProps>(
           backgroundColor: isDark ? '#121213ff' : '#f7f7f7ff'
         }}
         handleIndicatorStyle={{
-          backgroundColor: theme.color.val
+          backgroundColor: isDark ? '#f9f9f9ff' : '#202020ff'
         }}>
         <BottomSheetView style={{ paddingBottom: insets.bottom }}>
           <YStack alignItems="center" paddingTop={10} paddingBottom={30} paddingHorizontal={20} gap={10}>

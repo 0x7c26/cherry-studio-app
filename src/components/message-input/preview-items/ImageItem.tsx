@@ -5,12 +5,12 @@ import { TouchableOpacity } from 'react-native'
 import ImageView from 'react-native-image-viewing'
 import { Image, useWindowDimensions, View } from 'tamagui'
 
-import { FileType } from '@/types/file'
+import { FileMetadata } from '@/types/file'
 
 interface ImageItemProps {
-  file: FileType
-  allImages?: FileType[]
-  onRemove?: (file: FileType) => void
+  file: FileMetadata
+  allImages?: FileMetadata[]
+  onRemove?: (file: FileMetadata) => void
   size?: number
 }
 

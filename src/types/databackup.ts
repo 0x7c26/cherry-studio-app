@@ -35,7 +35,7 @@ export type BackupData = {
 }
 
 export type ImportIndexedData = {
-  // files: Omit<FileType, 'md5' | 'count' | 'mime_type'>[]
+  // files: Omit<FileMetadata, 'md5' | 'count' | 'mime_type'>[]
 
   topics: {
     id: string

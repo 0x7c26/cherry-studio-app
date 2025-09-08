@@ -3,7 +3,7 @@ import * as ImagePicker from 'expo-image-picker'
 import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { Alert, TouchableOpacity } from 'react-native'
-import { Avatar, Card, Input, Separator, Text, useTheme, XStack, YStack } from 'tamagui'
+import { Avatar, Card, Input, Separator, Text, XStack, YStack } from 'tamagui'
 
 import { SettingContainer } from '@/components/settings'
 import { HeaderBar } from '@/components/settings/HeaderBar'
@@ -15,7 +15,6 @@ const logger = loggerService.withContext('PersonalScreen')
 
 export default function PersonalScreen() {
   const { t } = useTranslation()
-  const theme = useTheme()
   const { avatar, userName, setAvatar, setUserName } = useSettings()
 
   const handleAvatarPress = async () => {
@@ -52,13 +51,13 @@ export default function PersonalScreen() {
                 <XStack position="relative">
                   <Avatar circular size={96}>
                     <Avatar.Image accessibilityLabel="Avatar" src={avatar || require('@/assets/images/favicon.png')} />
-                    <Avatar.Fallback delayMs={400} backgroundColor={theme.blue10} />
+                    <Avatar.Fallback delayMs={400} backgroundColor="$blue10" />
                   </Avatar>
                   <XStack
                     position="absolute"
                     bottom={0}
                     right={0}
-                    backgroundColor={theme.blue10}
+                    backgroundColor="$blue10"
                     padding={6}
                     borderRadius={999}
                     borderWidth={2}
@@ -84,8 +83,8 @@ export default function PersonalScreen() {
                 flex={1}
                 marginLeft={12}
                 borderRadius={8}
-                borderColor={theme.gray4}
-                backgroundColor={theme.background}
+                borderColor="$gray10"
+                backgroundColor="$backgroundPrimary"
                 height={40}
                 fontSize={14}
               />

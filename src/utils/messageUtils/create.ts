@@ -1,6 +1,6 @@
 import { loggerService } from '@/services/LoggerService'
 import { Assistant, Topic } from '@/types/assistant'
-import { FileType, FileTypes } from '@/types/file'
+import { FileMetadata, FileTypes } from '@/types/file'
 import {
   AssistantMessageStatus,
   BaseMessageBlock,
@@ -172,7 +172,7 @@ export function createTranslationBlock(
  */
 export function createFileBlock(
   messageId: string,
-  file: FileType,
+  file: FileMetadata,
   overrides: Partial<Omit<FileMessageBlock, 'id' | 'messageId' | 'type' | 'file'>> = {}
 ): FileMessageBlock {
   if (file.type === FileTypes.IMAGE) {

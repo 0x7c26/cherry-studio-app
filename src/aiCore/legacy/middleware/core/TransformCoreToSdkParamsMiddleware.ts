@@ -3,9 +3,10 @@ import { ChunkType } from '@/types/chunk'
 
 import { CompletionsParams, CompletionsResult } from '../schemas'
 import { CompletionsContext, CompletionsMiddleware } from '../types'
-const logger = loggerService.withContext('TransformCoreToSdkParamsMiddleware')
 
 export const MIDDLEWARE_NAME = 'TransformCoreToSdkParamsMiddleware'
+
+const logger = loggerService.withContext('TransformCoreToSdkParamsMiddleware')
 
 /**
  * 中间件：将CoreCompletionsRequest转换为SDK特定的参数
@@ -24,7 +25,7 @@ export const TransformCoreToSdkParamsMiddleware: CompletionsMiddleware =
     const apiClient = ctx.apiClientInstance
 
     if (!apiClient) {
-      logger.error(`🔄 [${MIDDLEWARE_NAME}] ApiClient instance not found in context.`)
+      logger.error(`ApiClient instance not found in context.`)
       throw new Error('ApiClient instance not found in context')
     }
 
@@ -32,9 +33,7 @@ export const TransformCoreToSdkParamsMiddleware: CompletionsMiddleware =
     const requestTransformer = apiClient.getRequestTransformer()
 
     if (!requestTransformer) {
-      logger.warn(
-        `🔄 [${MIDDLEWARE_NAME}] ApiClient does not have getRequestTransformer method, skipping transformation`
-      )
+      logger.warn(`ApiClient does not have getRequestTransformer method, skipping transformation`)
       const result = await next(ctx, params)
       return result
     }
@@ -44,7 +43,7 @@ export const TransformCoreToSdkParamsMiddleware: CompletionsMiddleware =
     const model = params.assistant.model
 
     if (!assistant || !model) {
-      console.error(`🔄 [${MIDDLEWARE_NAME}] Assistant or Model not found for transformation.`)
+      logger.error(`Assistant or Model not found for transformation.`)
       throw new Error('Assistant or Model not found for transformation')
     }
 
@@ -77,7 +76,7 @@ export const TransformCoreToSdkParamsMiddleware: CompletionsMiddleware =
 
       return next(ctx, params)
     } catch (error) {
-      logger.error(`🔄 [${MIDDLEWARE_NAME}] Error during request transformation:`, error)
+      logger.error('Error during request transformation:', error as Error)
       // 让错误向上传播，或者可以在这里进行特定的错误处理
       throw error
     }

@@ -1,13 +1,13 @@
 import { loggerService } from '@/services/LoggerService'
 import { Usage } from '@/types/assistant'
-import type { Chunk } from '@/types/chunk'
-import { ChunkType } from '@/types/chunk'
+import { Chunk, ChunkType } from '@/types/chunk'
 
 import { CompletionsParams, CompletionsResult, GenericChunk } from '../schemas'
 import { CompletionsContext, CompletionsMiddleware } from '../types'
-const logger = loggerService.withContext('FinalChunkConsumerAndNotifierMiddleware')
 
 export const MIDDLEWARE_NAME = 'FinalChunkConsumerAndNotifierMiddleware'
+
+const logger = loggerService.withContext('FinalChunkConsumerMiddleware')
 
 /**
  * 最终Chunk消费和通知中间件
@@ -64,9 +64,10 @@ const FinalChunkConsumerMiddleware: CompletionsMiddleware =
         try {
           while (true) {
             const { done, value: chunk } = await reader.read()
+            logger.silly('chunk', chunk)
 
             if (done) {
-              logger.debug(`[${MIDDLEWARE_NAME}] Input stream finished.`)
+              logger.debug(`Input stream finished.`)
               break
             }
 
@@ -82,12 +83,20 @@ const FinalChunkConsumerMiddleware: CompletionsMiddleware =
 
               if (!shouldSkipChunk) params.onChunk?.(genericChunk)
             } else {
-              logger.warn(`[${MIDDLEWARE_NAME}] Received undefined chunk before stream was done.`)
+              logger.warn(`Received undefined chunk before stream was done.`)
             }
           }
-        } catch (error) {
-          logger.error(`[${MIDDLEWARE_NAME}] Error consuming stream:`, error)
-          throw error
+        } catch (error: any) {
+          logger.error(`Error consuming stream:`, error as Error)
+
+          // FIXME: 临时解决方案。该中间件的异常无法被 ErrorHandlerMiddleware捕获。
+          if (params.onError) {
+            params.onError(error)
+          }
+
+          if (params.shouldThrow) {
+            throw error
+          }
         } finally {
           if (params.onChunk && !isRecursiveCall) {
             params.onChunk({
@@ -119,7 +128,7 @@ const FinalChunkConsumerMiddleware: CompletionsMiddleware =
 
         return modifiedResult
       } else {
-        logger.debug(`[${MIDDLEWARE_NAME}] No GenericChunk stream to process.`)
+        logger.debug(`No GenericChunk stream to process.`)
       }
     }
 
@@ -137,7 +146,7 @@ function extractAndAccumulateUsageMetrics(ctx: CompletionsContext, chunk: Generi
   try {
     if (ctx._internal.customState && !ctx._internal.customState?.firstTokenTimestamp) {
       ctx._internal.customState.firstTokenTimestamp = Date.now()
-      logger.debug(`[${MIDDLEWARE_NAME}] First token timestamp: ${ctx._internal.customState.firstTokenTimestamp}`)
+      logger.debug(`First token timestamp: ${ctx._internal.customState.firstTokenTimestamp}`)
     }
 
     if (chunk.type === ChunkType.LLM_RESPONSE_COMPLETE) {
@@ -162,7 +171,7 @@ function extractAndAccumulateUsageMetrics(ctx: CompletionsContext, chunk: Generi
       )
     }
   } catch (error) {
-    console.error(`[${MIDDLEWARE_NAME}] Error extracting usage/metrics from chunk:`, error)
+    logger.error('Error extracting usage/metrics from chunk:', error as Error)
   }
 }
 
@@ -184,6 +193,11 @@ function accumulateUsage(accumulated: Usage, newUsage: Usage): void {
 
   if (newUsage.thoughts_tokens !== undefined) {
     accumulated.thoughts_tokens = (accumulated.thoughts_tokens || 0) + newUsage.thoughts_tokens
+  }
+
+  // Handle OpenRouter specific cost fields
+  if (newUsage.cost !== undefined) {
+    accumulated.cost = (accumulated.cost || 0) + newUsage.cost
   }
 }
 

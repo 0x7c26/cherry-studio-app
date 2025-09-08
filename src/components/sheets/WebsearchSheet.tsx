@@ -5,9 +5,9 @@ import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { BackHandler } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Button, Text, useTheme, XStack, YStack } from 'tamagui'
+import { Button, Text, XStack, YStack } from 'tamagui'
 
-import { useTheme as useCustomTheme } from '@/hooks/useTheme'
+import { useTheme } from '@/hooks/useTheme'
 import { Assistant } from '@/types/assistant'
 import { DrawerNavigationProps } from '@/types/naviagate'
 import { WebSearchProvider } from '@/types/websearch'
@@ -23,8 +23,7 @@ interface WebsearchSheetProps {
 
 const WebsearchSheet = forwardRef<BottomSheetModal, WebsearchSheetProps>(
   ({ providers, assistant, updateAssistant }, ref) => {
-    const theme = useTheme()
-    const { isDark } = useCustomTheme()
+    const { isDark } = useTheme()
     const { t } = useTranslation()
     const navigation = useNavigation<DrawerNavigationProps>()
     const insets = useSafeAreaInsets()
@@ -43,7 +42,7 @@ const WebsearchSheet = forwardRef<BottomSheetModal, WebsearchSheetProps>(
 
     const handleNavigateToWebSearhPage = () => {
       ;(ref as React.RefObject<BottomSheetModal>)?.current?.dismiss()
-      navigation.navigate('Settings', { screen: 'WebSearchSettings' })
+      navigation.navigate('Home', { screen: 'WebSearchSettings' })
     }
 
     // 处理Android返回按钮事件
@@ -72,7 +71,7 @@ const WebsearchSheet = forwardRef<BottomSheetModal, WebsearchSheetProps>(
           backgroundColor: isDark ? '#121213ff' : '#f7f7f7ff'
         }}
         handleIndicatorStyle={{
-          backgroundColor: theme.color.val
+          backgroundColor: isDark ? '#f9f9f9ff' : '#202020ff'
         }}
         backdropComponent={renderBackdrop}>
         <BottomSheetView style={{ paddingBottom: insets.bottom }}>

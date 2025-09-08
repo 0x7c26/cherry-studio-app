@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm'
 
 import { loggerService } from '@/services/LoggerService'
-import { FileType } from '@/types/file'
+import { FileMetadata } from '@/types/file'
 
 import { db } from '..'
 import { files } from '../schema'
@@ -12,7 +12,7 @@ const logger = loggerService.withContext('DataBase Files')
  * @param dbRecord - 从数据库检索的记录。
  * @returns 一个 File 对象。
  */
-export function transformDbToFile(dbRecord: FileType): FileType {
+export function transformDbToFile(dbRecord: FileMetadata): FileMetadata {
   return {
     id: dbRecord.id,
     origin_name: dbRecord.origin_name,
@@ -22,9 +22,7 @@ export function transformDbToFile(dbRecord: FileType): FileType {
     size: dbRecord.size,
     ext: dbRecord.ext,
     count: dbRecord.count,
-    type: dbRecord.type,
-    mime_type: dbRecord.mime_type,
-    md5: dbRecord.md5
+    type: dbRecord.type
   }
 }
 
@@ -33,7 +31,7 @@ export function transformDbToFile(dbRecord: FileType): FileType {
  * @param File - File 对象。
  * @returns 一个适合数据库操作的对象。
  */
-function transformFileToDb(file: FileType) {
+function transformFileToDb(file: FileMetadata) {
   return {
     id: file.id,
     origin_name: file.origin_name,
@@ -43,9 +41,7 @@ function transformFileToDb(file: FileType) {
     size: file.size,
     ext: file.ext,
     count: file.count,
-    type: file.type,
-    md5: file.md5,
-    mime_type: file.mime_type
+    type: file.type
   }
 }
 
@@ -53,9 +49,9 @@ function transformFileToDb(file: FileType) {
  * 返回所有文件
  * @returns 文件数组
  */
-export async function getAllFiles(): Promise<FileType[] | null> {
+export async function getAllFiles(): Promise<FileMetadata[] | null> {
   try {
-    const result = (await db.select().from(files)) as FileType[]
+    const result = (await db.select().from(files)) as FileMetadata[]
 
     if (result.length === 0) {
       return null
@@ -74,9 +70,9 @@ export async function getAllFiles(): Promise<FileType[] | null> {
  * @returns 返回一个文件对象
  * @description 根据id获取文件
  */
-export async function getFileById(id: string): Promise<FileType | null> {
+export async function getFileById(id: string): Promise<FileMetadata | null> {
   try {
-    const result = (await db.select().from(files).where(eq(files.id, id)).limit(1)) as FileType[]
+    const result = (await db.select().from(files).where(eq(files.id, id)).limit(1)) as FileMetadata[]
 
     if (result.length === 0) {
       return null
@@ -95,28 +91,16 @@ export async function getFileById(id: string): Promise<FileType | null> {
  * @returns 无返回值。
  * @description 此函数将尝试插入或更新助手记录到数据库中。
  */
-async function upsertFile(filesToUpsert: FileType, allFilesMeta?: Pick<FileType, 'md5' | 'count'>[]) {
+async function upsertFile(filesToUpsert: FileMetadata) {
   try {
     const dbRecord = transformFileToDb(filesToUpsert)
 
-    const _allFilesMeta = allFilesMeta || (await getAllFiles())?.map(item => ({ md5: item.md5, count: item.count }))
-    const existFile = _allFilesMeta?.find(item => item.md5 === filesToUpsert.md5)
-
-    if (existFile)
-      return db
-        .insert(files)
-        .values(dbRecord)
-        .onConflictDoUpdate({
-          target: [files.id],
-          set: { ...dbRecord, count: existFile.count + 1 }
-        })
-
-    return db
+    await db
       .insert(files)
       .values(dbRecord)
       .onConflictDoUpdate({
         target: [files.id],
-        set: dbRecord
+        set: { ...dbRecord, count: 1 }
       })
   } catch (error) {
     logger.error('Error upserting file:', error)
@@ -130,10 +114,19 @@ async function upsertFile(filesToUpsert: FileType, allFilesMeta?: Pick<FileType,
  * @returns 无返回值。
  * @description 此函数将尝试插入或更新助手记录到数据库中。
  */
-export async function upsertFiles(filesToUpsert: FileType[]) {
+export async function upsertFiles(filesToUpsert: FileMetadata[]) {
   try {
-    const allFilesMeta = (await getAllFiles())?.map(item => ({ md5: item.md5, count: item.count }))
-    const upsertPromises = filesToUpsert.map(self => upsertFile(self, allFilesMeta))
+    const dbRecords = filesToUpsert.map(transformFileToDb)
+    const upsertPromises = dbRecords.map(async record => {
+      await db
+        .insert(files)
+        .values(record)
+        .onConflictDoUpdate({
+          target: [files.id],
+          set: { ...record, count: 1 }
+        })
+    })
+
     await Promise.all(upsertPromises)
   } catch (error) {
     logger.error('Error upserting files:', error)

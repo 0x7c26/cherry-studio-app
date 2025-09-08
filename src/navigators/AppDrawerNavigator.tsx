@@ -7,7 +7,6 @@ import React from 'react'
 import CustomDrawerContent from '@/components/menu/CustomDrawerContent'
 import AssistantStackNavigator from '@/navigators/AssistantStackNavigator'
 import HomeStackNavigator from '@/navigators/HomeStackNavigator'
-import SettingsStackNavigator from '@/navigators/SettingsStackNavigator'
 import { Width } from '@/utils/device'
 
 const Drawer = createDrawerNavigator()
@@ -18,7 +17,6 @@ export default function AppDrawerNavigator() {
       {/* Main grouped navigators */}
       <Drawer.Screen name="Home" options={options} component={HomeStackNavigator} />
       <Drawer.Screen name="Assistant" options={options} component={AssistantStackNavigator} />
-      <Drawer.Screen name="Settings" options={{ swipeEnabled: false, ...options }} component={SettingsStackNavigator} />
 
       {/* Individual screens for backward compatibility */}
       {/*<Drawer.Screen name="ChatScreen" options={options} component={ChatScreen} />

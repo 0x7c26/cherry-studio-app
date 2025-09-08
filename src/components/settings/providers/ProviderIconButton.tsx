@@ -9,7 +9,7 @@ import { LinearGradient } from 'tamagui/linear-gradient'
 
 import { DefaultProviderIcon } from '@/components/icons/DefaultProviderIcon'
 import { loggerService } from '@/services/LoggerService'
-import { FileType } from '@/types/file'
+import { FileMetadata } from '@/types/file'
 import { getFileType } from '@/utils/file'
 
 const logger = loggerService.withContext('ProviderIconButton')
@@ -20,11 +20,14 @@ const ALLOWED_FORMATS = ['png', 'jpg', 'jpeg']
 interface ProviderIconButtonProps {
   providerId: string
   iconUri?: string
-  onImageSelected?: (file: Omit<FileType, 'md5'> | null) => void
+  onImageSelected?: (file: Omit<FileMetadata, 'md5'> | null) => void
 }
 
 // Helper function to create file from image asset
-const createFileFromImageAsset = (asset: ImagePicker.ImagePickerAsset, providerId: string): Omit<FileType, 'md5'> => {
+const createFileFromImageAsset = (
+  asset: ImagePicker.ImagePickerAsset,
+  providerId: string
+): Omit<FileMetadata, 'md5'> => {
   const ext = asset.fileName?.split('.').pop() || 'png'
 
   return {
@@ -35,7 +38,6 @@ const createFileFromImageAsset = (asset: ImagePicker.ImagePickerAsset, providerI
     size: asset.fileSize || 0,
     ext,
     type: getFileType(ext),
-    mime_type: asset.mimeType || '',
     created_at: new Date().toISOString(),
     count: 1
   }

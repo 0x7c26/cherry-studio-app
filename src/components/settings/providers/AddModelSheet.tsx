@@ -3,9 +3,9 @@ import React, { forwardRef, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { BackHandler, Keyboard, TouchableWithoutFeedback } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Button, Text, useTheme, XStack, YStack } from 'tamagui'
+import { Button, Text, XStack, YStack } from 'tamagui'
 
-import { useTheme as useCustomTheme } from '@/hooks/useTheme'
+import { useTheme } from '@/hooks/useTheme'
 import { loggerService } from '@/services/LoggerService'
 import { Model, Provider } from '@/types/assistant'
 import { getDefaultGroupName } from '@/utils/naming'
@@ -19,8 +19,7 @@ interface AddModelSheetProps {
 
 const AddModelSheet = forwardRef<BottomSheetModal, AddModelSheetProps>(({ provider, updateProvider }, ref) => {
   const { t } = useTranslation()
-  const theme = useTheme()
-  const { isDark } = useCustomTheme()
+  const { isDark } = useTheme()
 
   const [modelId, setModelId] = useState('')
   const [modelName, setModelName] = useState('')
@@ -100,7 +99,7 @@ const AddModelSheet = forwardRef<BottomSheetModal, AddModelSheetProps>(({ provid
         backgroundColor: isDark ? '#121213ff' : '#f7f7f7ff'
       }}
       handleIndicatorStyle={{
-        backgroundColor: theme.color.val
+        backgroundColor: isDark ? '#f9f9f9ff' : '#202020ff'
       }}
       backdropComponent={renderBackdrop}>
       <BottomSheetView style={{ paddingBottom: insets.bottom }}>

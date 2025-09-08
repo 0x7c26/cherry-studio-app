@@ -3,14 +3,14 @@ import { LRUCache } from 'lru-cache'
 
 import ModernAiProvider from '@/aiCore/index_new'
 import { AiSdkMiddlewareConfig } from '@/aiCore/middleware/AiSdkMiddlewareBuilder'
-import { buildStreamTextParams, convertMessagesToSdkMessages } from '@/aiCore/transformParameters'
-import { isDedicatedImageGenerationModel } from '@/config/models/image'
+import { buildStreamTextParams, convertMessagesToSdkMessages } from '@/aiCore/prepareParams'
+import { isDedicatedImageGenerationModel } from '@/config/models'
 import { loggerService } from '@/services/LoggerService'
 import { AppDispatch } from '@/store'
 import { newMessagesActions } from '@/store/newMessage'
 import { Assistant, Model, Topic, Usage } from '@/types/assistant'
 import { ChunkType } from '@/types/chunk'
-import { FileType, FileTypes } from '@/types/file'
+import { FileMetadata, FileTypes } from '@/types/file'
 import { AssistantMessageStatus, Message, MessageBlock, MessageBlockStatus } from '@/types/message'
 import { uuid } from '@/utils'
 import { addAbortController } from '@/utils/abortController'
@@ -43,7 +43,7 @@ import {
 import { getTopicById, updateTopicMessages } from '../../db/queries/topics.queries'
 import { getAssistantById, getDefaultModel } from './AssistantService'
 import { BlockManager, createCallbacks } from './messageStreaming'
-import { OrchestrationService } from './OrchestrationService'
+import { transformMessagesAndFetch } from './OrchestrationService'
 import { getAssistantProvider } from './ProviderService'
 import { createStreamProcessor, StreamProcessorCallbacks } from './StreamProcessingService'
 
@@ -74,7 +74,7 @@ export function getUserMessage({
   topic: Topic
   type?: Message['type']
   content?: string
-  files?: FileType[]
+  files?: FileMetadata[]
   mentions?: Model[]
   usage?: Usage
 }): { message: Message; blocks: MessageBlock[] } {
@@ -463,11 +463,11 @@ export async function fetchAndProcessAssistantResponseImpl(
     const abortController = new AbortController()
     addAbortController(userMessageId!, () => abortController.abort())
 
-    const orchestrationService = new OrchestrationService()
-    await orchestrationService.handleUserMessage(
+    await transformMessagesAndFetch(
       {
         messages: messagesForContext,
         assistant,
+        topicId,
         options: {
           signal: abortController.signal,
           timeout: 30000
@@ -540,11 +540,11 @@ export async function cleanupMultipleBlocks(blockIds: string[]) {
   //     .filter((block): block is MessageBlock => block !== null)
   //     .filter(block => block.type === MessageBlockType.FILE || block.type === MessageBlockType.IMAGE)
   //     .map(block => block.file)
-  //     .filter((file): file is FileType => file !== undefined)
+  //     .filter((file): file is FileMetadata => file !== undefined)
   //   return isEmpty(files) ? [] : files
   // }
 
-  // const cleanupFiles = async (files: FileType[]) => {
+  // const cleanupFiles = async (files: FileMetadata[]) => {
   //   await Promise.all(files.map(file => FileManager.deleteFile(file.id, false)))
   // }
 
@@ -628,12 +628,22 @@ export async function fetchTranslateThunk(assistantMessageId: string, message: M
     enableWebSearch: capabilities.enableWebSearch,
     enableGenerateImage: capabilities.enableGenerateImage,
     mcpTools: [],
-    assistant: translateAssistant
+    uiMessages: [message]
   }
 
   try {
     streamProcessorCallbacks({ type: ChunkType.LLM_RESPONSE_CREATED })
-    return (await AI.completions(modelId, aiSdkParams, middlewareConfig)).getText() || ''
+    return (
+      (
+        await AI.completions(modelId, aiSdkParams, {
+          ...middlewareConfig,
+          assistant: translateAssistant,
+          topicId: message.topicId,
+          callType: 'chat',
+          uiMessages: [message]
+        })
+      ).getText() || ''
+    )
   } catch (error: any) {
     logger.error('Error during translation:', error)
     return ''

@@ -15,7 +15,7 @@ export function useSwipeGesture() {
     .onEnd(event => {
       const { translationX, velocityX } = event
 
-      // 检测向右滑动
+      // 检测向左滑动
       // 全屏可侧滑触发：滑动距离大于20且速度大于100，或者滑动距离大于80
       const hasGoodDistance = translationX > 20
       const hasGoodVelocity = velocityX > 100

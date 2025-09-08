@@ -20,7 +20,8 @@ export default {
         backgroundColor: '#F65D5D'
       },
       package: 'com.anonymous.cherrystudio',
-      userInterfaceStyle: 'automatic'
+      userInterfaceStyle: 'automatic',
+      predictiveBackGestureEnabled: false
     },
     plugins: [
       ['expo-build-properties', { ios: { deploymentTarget: '15.5' } }],
@@ -92,7 +93,8 @@ export default {
     ],
     experiments: {
       typedRoutes: true,
-      reactCompiler: true
+      reactCompiler: true,
+      tsconfigPaths: true
     },
     extra: {
       eas: {

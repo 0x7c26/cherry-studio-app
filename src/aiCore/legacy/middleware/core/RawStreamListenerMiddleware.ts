@@ -1,6 +1,6 @@
+import { AnthropicAPIClient } from '@/aiCore/legacy/clients/anthropic/AnthropicAPIClient'
 import { AnthropicSdkRawChunk, AnthropicSdkRawOutput } from '@/types/sdk'
 
-import { AnthropicAPIClient } from '../../clients/anthropic/AnthropicAPIClient'
 import { AnthropicStreamListener } from '../../clients/types'
 import { CompletionsParams, CompletionsResult } from '../schemas'
 import { CompletionsContext, CompletionsMiddleware } from '../types'
@@ -15,10 +15,8 @@ export const RawStreamListenerMiddleware: CompletionsMiddleware =
 
     // 在这里可以监听到从SDK返回的最原始流
     if (result.rawOutput) {
-      const providerType = ctx.apiClientInstance.provider.type
-
       // TODO: 后面下放到AnthropicAPIClient
-      if (providerType === 'anthropic') {
+      if (ctx.apiClientInstance instanceof AnthropicAPIClient) {
         const anthropicListener: AnthropicStreamListener<AnthropicSdkRawChunk> = {
           onMessage: message => {
             if (ctx._internal?.toolProcessingState) {

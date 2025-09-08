@@ -1,12 +1,14 @@
-import { StreamTextParams } from '@cherrystudio/ai-core'
-import { takeRight } from 'lodash'
+import { ModelMessage } from 'ai'
+import { findLast, takeRight } from 'lodash'
 
-import { convertMessagesToSdkMessages } from '@/aiCore/transformParameters'
+import { convertMessagesToSdkMessages } from '@/aiCore/prepareParams'
 import { Assistant } from '@/types/assistant'
 import { Message } from '@/types/message'
 import {
-  filterContextMessages,
+  filterAdjacentUserMessaegs,
+  filterAfterContextClearMessages,
   filterEmptyMessages,
+  filterLastAssistantMessage,
   filterUsefulMessages,
   filterUserRoleStartMessages
 } from '@/utils/messageUtils/filters'
@@ -14,23 +16,51 @@ import {
 import { getAssistantSettings, getDefaultModel } from './AssistantService'
 
 export class ConversationService {
-  static async prepareMessagesForLlm(messages: Message[], assistant: Assistant): Promise<StreamTextParams['messages']> {
+  static async prepareMessagesForModel(
+    messages: Message[],
+    assistant: Assistant
+  ): Promise<{ modelMessages: ModelMessage[]; uiMessages: Message[] }> {
     const { contextCount } = getAssistantSettings(assistant)
     // This logic is extracted from the original ApiService.fetchChatCompletion
-    const contextMessages = filterContextMessages(messages)
-    const filteredMessages = filterUsefulMessages(contextMessages)
-    // Take the last `contextCount` messages, plus 2 to allow for a final user/assistant exchange.
-    const finalMessages = filterUserRoleStartMessages(
-      filterEmptyMessages(takeRight(filteredMessages, contextCount + 2))
+    // const contextMessages = filterContextMessages(messages)
+    const lastUserMessage = findLast(messages, m => m.role === 'user')
+
+    if (!lastUserMessage) {
+      return {
+        modelMessages: [],
+        uiMessages: []
+      }
+    }
+
+    const filteredMessages1 = filterAfterContextClearMessages(messages)
+
+    const filteredMessages2 = filterUsefulMessages(filteredMessages1)
+
+    const filteredMessages3 = filterLastAssistantMessage(filteredMessages2)
+
+    const filteredMessages4 = filterAdjacentUserMessaegs(filteredMessages3)
+
+    let uiMessages = filterUserRoleStartMessages(
+      filterEmptyMessages(filterAfterContextClearMessages(takeRight(filteredMessages4, contextCount + 2))) // 取原来几个provider的最大值
     )
-    return await convertMessagesToSdkMessages(finalMessages, assistant.model || getDefaultModel())
+
+    // Fallback: ensure at least the last user message is present to avoid empty payloads
+    if ((!uiMessages || uiMessages.length === 0) && lastUserMessage) {
+      uiMessages = [lastUserMessage]
+    }
+
+    return {
+      modelMessages: await convertMessagesToSdkMessages(uiMessages, assistant.model || getDefaultModel()),
+      uiMessages
+    }
   }
 
-  // static needsWebSearch(assistant: Assistant): boolean {
-  //   return !!assistant.webSearchProviderId
-  // }
+  static needsWebSearch(assistant: Assistant): boolean {
+    return !!assistant.webSearchProviderId
+  }
 
-  // static needsKnowledgeSearch(assistant: Assistant): boolean {
-  //   return !isEmpty(assistant.knowledge_bases)
-  // }
+  static needsKnowledgeSearch(assistant: Assistant): boolean {
+    return false
+    // return !isEmpty(assistant.knowledge_bases)
+  }
 }

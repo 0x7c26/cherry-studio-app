@@ -2,15 +2,15 @@ import { FC } from 'react'
 import React from 'react'
 import { View } from 'tamagui'
 
-import { FileType, FileTypes } from '@/types/file'
+import { FileMetadata, FileTypes } from '@/types/file'
 
 import FileItem from './FileItem'
 import ImageItem from './ImageItem'
 
 interface PreviewItemProps {
-  file: FileType
-  files: FileType[]
-  setFiles: (files: FileType[]) => void
+  file: FileMetadata
+  files: FileMetadata[]
+  setFiles: (files: FileMetadata[]) => void
 }
 
 const PreviewItem: FC<PreviewItemProps> = ({ file, files, setFiles }) => {

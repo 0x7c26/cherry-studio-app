@@ -1,6 +1,6 @@
 import React from 'react'
 import { useTranslation } from 'react-i18next'
-import { Text, useTheme, XStack, YStack } from 'tamagui'
+import { Text, XStack, YStack } from 'tamagui'
 
 import { SettingContainer } from '@/components/settings'
 import { HeaderBar } from '@/components/settings/HeaderBar'
@@ -11,8 +11,6 @@ import { useSettings } from '@/hooks/useSettings'
 export default function ThemeSettingsScreen() {
   const { t } = useTranslation()
   const { theme: currentTheme, setTheme: setCurrentTheme } = useSettings()
-
-  const theme = useTheme()
 
   return (
     <SafeAreaContainer style={{ flex: 1 }}>
@@ -38,11 +36,11 @@ export default function ThemeSettingsScreen() {
                 height={20}
                 borderRadius={10}
                 borderWidth={2}
-                borderColor={currentTheme === opt.value ? theme.color.val : theme['$color8']}
+                borderColor={currentTheme === opt.value ? '$textPrimary' : '$textSecondary'}
                 alignItems="center"
                 justifyContent="center">
                 {currentTheme === opt.value && (
-                  <XStack width={10} height={10} borderRadius={5} backgroundColor={theme.color.val} />
+                  <XStack width={10} height={10} borderRadius={5} backgroundColor="$textPrimary" />
                 )}
               </XStack>
             </XStack>

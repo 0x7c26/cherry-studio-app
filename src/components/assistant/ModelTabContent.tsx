@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next'
 import { Button, Input, Stack, Text, XStack } from 'tamagui'
 
 import { SettingGroup, SettingRow } from '@/components/settings'
-import { isReasoningModel } from '@/config/models/reasoning'
+import { isReasoningModel } from '@/config/models'
 import { Assistant, AssistantSettings, Model } from '@/types/assistant'
 
 import ModelSheet from '../sheets/ModelSheet'

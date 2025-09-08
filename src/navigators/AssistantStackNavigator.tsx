@@ -18,6 +18,7 @@ export default function AssistantStackNavigator() {
     <Stack.Navigator
       screenOptions={{
         headerShown: false,
+        gestureResponseDistance: 9999,
         ...TransitionPresets.SlideFromRightIOS
       }}>
       <Stack.Screen name="AssistantScreen" component={AssistantScreen} />

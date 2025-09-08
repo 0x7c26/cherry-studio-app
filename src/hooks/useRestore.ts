@@ -6,7 +6,7 @@ import { useDispatch } from 'react-redux'
 import { RestoreStep } from '@/components/settings/data/RestoreProgressModal'
 import { ProgressUpdate, restore, RestoreStepId } from '@/services/BackupService'
 import { loggerService } from '@/services/LoggerService'
-import { FileType } from '@/types/file'
+import { FileMetadata } from '@/types/file'
 import { uuid } from '@/utils'
 import { getFileType } from '@/utils/file'
 const logger = loggerService.withContext('useRestore')
@@ -41,11 +41,11 @@ export const RESTORE_STEP_CONFIGS = {
 
 // 预定义的步骤组合
 export const DEFAULT_RESTORE_STEPS: StepConfig[] = [
-  RESTORE_STEP_CONFIGS.RESTORE_TOPICS,
-  RESTORE_STEP_CONFIGS.RESTORE_MESSAGES_BLOCKS,
   RESTORE_STEP_CONFIGS.RESTORE_LLM_PROVIDERS,
   RESTORE_STEP_CONFIGS.RESTORE_ASSISTANTS,
-  RESTORE_STEP_CONFIGS.RESTORE_WEBSEARCH
+  RESTORE_STEP_CONFIGS.RESTORE_WEBSEARCH,
+  RESTORE_STEP_CONFIGS.RESTORE_TOPICS,
+  RESTORE_STEP_CONFIGS.RESTORE_MESSAGES_BLOCKS
 ]
 
 export const LOCAL_RESTORE_STEPS: StepConfig[] = [...DEFAULT_RESTORE_STEPS]
@@ -62,7 +62,10 @@ const createStepsFromConfig = (stepConfigs: StepConfig[], t: (key: string) => st
 
 export interface UseRestoreOptions {
   stepConfigs?: StepConfig[]
-  customRestoreFunction?: (file: Omit<FileType, 'md5'>, onProgress: (update: ProgressUpdate) => void) => Promise<void>
+  customRestoreFunction?: (
+    file: Omit<FileMetadata, 'md5'>,
+    onProgress: (update: ProgressUpdate) => void
+  ) => Promise<void>
 }
 
 export function useRestore(options: UseRestoreOptions = {}) {
@@ -92,7 +95,7 @@ export function useRestore(options: UseRestoreOptions = {}) {
     size?: number
     mimeType?: string
     type?: string
-  }): Omit<FileType, 'md5'> => ({
+  }): Omit<FileMetadata, 'md5'> => ({
     id: uuid(),
     name: file.name,
     origin_name: file.name,
@@ -100,7 +103,6 @@ export function useRestore(options: UseRestoreOptions = {}) {
     size: file.size || 0,
     ext: file.name.split('.').pop() || '',
     type: getFileType(file.name.split('.').pop() || ''),
-    mime_type: file.mimeType || file.type || '',
     created_at: new Date().toISOString(),
     count: 1
   })

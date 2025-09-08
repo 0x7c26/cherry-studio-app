@@ -3,16 +3,15 @@
  * 用于将 AI SDK 的 fullStream 转换为 Cherry Studio 的 chunk 格式
  */
 
-import { TextStreamPart, ToolSet } from '@cherrystudio/ai-core'
+import type { TextStreamPart, ToolSet } from 'ai'
 
 import { loggerService } from '@/services/LoggerService'
 import { Chunk, ChunkType } from '@/types/chunk'
-import { BaseTool } from '@/types/tool'
+import { MCPTool } from '@/types/tool'
 import { WebSearchResults, WebSearchSource } from '@/types/websearch'
 
 import { ToolCallChunkHandler } from './handleTooCallChunk'
 
-// import { ToolCallChunkHandler } from './chunk/handleTooCallChunk'
 const logger = loggerService.withContext('AiSdkToChunkAdapter')
 
 export interface CherryStudioChunk {
@@ -31,11 +30,14 @@ export interface CherryStudioChunk {
  */
 export class AiSdkToChunkAdapter {
   toolCallHandler: ToolCallChunkHandler
+  private accumulate: boolean | undefined
   constructor(
     private onChunk: (chunk: Chunk) => void,
-    private mcpTools: BaseTool[] = []
+    mcpTools: MCPTool[] = [],
+    accumulate?: boolean
   ) {
     this.toolCallHandler = new ToolCallChunkHandler(onChunk, mcpTools)
+    this.accumulate = accumulate
   }
 
   /**
@@ -100,7 +102,12 @@ export class AiSdkToChunkAdapter {
         })
         break
       case 'text-delta':
-        final.text += chunk.text || ''
+        if (this.accumulate) {
+          final.text += chunk.text || ''
+        } else {
+          final.text = chunk.text || ''
+        }
+
         this.onChunk({
           type: ChunkType.TEXT_DELTA,
           text: final.text || ''
@@ -140,11 +147,11 @@ export class AiSdkToChunkAdapter {
 
       // === 工具调用相关事件（原始 AI SDK 事件，如果没有被中间件处理） ===
 
-      case 'tool-input-start':
-      case 'tool-input-delta':
-      case 'tool-input-end':
-        this.toolCallHandler.handleToolCallCreated(chunk)
-        break
+      // case 'tool-input-start':
+      // case 'tool-input-delta':
+      // case 'tool-input-end':
+      //   this.toolCallHandler.handleToolCallCreated(chunk)
+      //   break
 
       // case 'tool-input-delta':
       //   this.toolCallHandler.handleToolCallCreated(chunk)
@@ -191,21 +198,35 @@ export class AiSdkToChunkAdapter {
               source: WebSearchSource.GEMINI
             }
           })
+        } else if (final.webSearchResults.length) {
+          const providerName = Object.keys(providerMetadata || {})[0]
+          const sourceMap: Record<string, WebSearchSource> = {
+            [WebSearchSource.OPENAI]: WebSearchSource.OPENAI_RESPONSE,
+            [WebSearchSource.ANTHROPIC]: WebSearchSource.ANTHROPIC,
+            [WebSearchSource.OPENROUTER]: WebSearchSource.OPENROUTER,
+            [WebSearchSource.GEMINI]: WebSearchSource.GEMINI,
+            [WebSearchSource.PERPLEXITY]: WebSearchSource.PERPLEXITY,
+            [WebSearchSource.QWEN]: WebSearchSource.QWEN,
+            [WebSearchSource.HUNYUAN]: WebSearchSource.HUNYUAN,
+            [WebSearchSource.ZHIPU]: WebSearchSource.ZHIPU,
+            [WebSearchSource.GROK]: WebSearchSource.GROK,
+            [WebSearchSource.WEBSEARCH]: WebSearchSource.WEBSEARCH
+          }
+          const source = sourceMap[providerName] || WebSearchSource.AISDK
+
+          this.onChunk({
+            type: ChunkType.LLM_WEB_SEARCH_COMPLETE,
+            llm_web_search: {
+              results: final.webSearchResults,
+              source
+            }
+          })
         }
 
         if (finishReason === 'tool-calls') {
           this.onChunk({ type: ChunkType.LLM_RESPONSE_CREATED })
         }
 
-        // else {
-        //   this.onChunk({
-        //     type: ChunkType.LLM_WEB_SEARCH_COMPLETE,
-        //     llm_web_search: {
-        //       results: final.webSearchResults,
-        //       source: WebSearchSource.AISDK
-        //     }
-        //   })
-        // }
         final.webSearchResults = []
         // final.reasoningId = ''
         break
@@ -276,6 +297,12 @@ export class AiSdkToChunkAdapter {
             type: 'base64',
             images: [`data:${chunk.file.mediaType};base64,${chunk.file.base64}`]
           }
+        })
+        break
+      case 'abort':
+        this.onChunk({
+          type: ChunkType.ERROR,
+          error: new DOMException('Request was aborted', 'AbortError')
         })
         break
       case 'error':

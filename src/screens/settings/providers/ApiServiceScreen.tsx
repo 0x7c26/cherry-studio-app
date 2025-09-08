@@ -13,7 +13,7 @@ import { SettingContainer, SettingGroupTitle, SettingHelpText } from '@/componen
 import { HeaderBar } from '@/components/settings/HeaderBar'
 import { ApiCheckSheet } from '@/components/settings/providers/ApiCheckSheet'
 import SafeAreaContainer from '@/components/ui/SafeAreaContainer'
-import { isEmbeddingModel } from '@/config/models/embedding'
+import { isEmbeddingModel } from '@/config/models'
 import { PROVIDER_URLS } from '@/config/providers'
 import { useProvider } from '@/hooks/useProviders'
 import { ProvidersStackParamList } from '@/navigators/settings/ProvidersStackNavigator'

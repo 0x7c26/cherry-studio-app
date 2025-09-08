@@ -172,7 +172,7 @@ CREATE TABLE message_blocks (
   content TEXT,                        -- Main content
   language TEXT,                       -- Programming language for code blocks
   url TEXT,                           -- URL for image blocks
-  file TEXT,                          -- JSON FileType for attachments
+  file TEXT,                          -- JSON FileMetadata for attachments
 
   -- Tool block specific
   tool_id TEXT,

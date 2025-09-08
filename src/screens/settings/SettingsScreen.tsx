@@ -4,14 +4,14 @@ import React from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 import { GestureDetector } from 'react-native-gesture-handler'
-import { Avatar, Text, useTheme, XStack, YStack } from 'tamagui'
+import { Avatar, Text, XStack, YStack } from 'tamagui'
 
 import { PressableSettingRow, SettingContainer, SettingGroup, SettingGroupTitle } from '@/components/settings'
 import { HeaderBar } from '@/components/settings/HeaderBar'
 import SafeAreaContainer from '@/components/ui/SafeAreaContainer'
 import { useSettings } from '@/hooks/useSettings'
 import { useSwipeGesture } from '@/hooks/useSwipeGesture'
-import { SettingsNavigationProps } from '@/types/naviagate'
+import { HomeNavigationProps } from '@/types/naviagate'
 
 interface SettingItemConfig {
   title: string
@@ -145,15 +145,14 @@ interface SettingItemProps {
 }
 
 function SettingItem({ title, screen, icon, specificScreen }: SettingItemProps) {
-  const navigation = useNavigation<SettingsNavigationProps>()
-  const theme = useTheme()
+  const navigation = useNavigation<HomeNavigationProps>()
 
   const renderIcon = () => {
     if (typeof icon === 'string') {
       return (
         <Avatar circular size={40}>
           <Avatar.Image accessibilityLabel={title} src={icon || require('@/assets/images/favicon.png')} />
-          <Avatar.Fallback delayMs={600} backgroundColor={theme.blue10} />
+          <Avatar.Fallback delayMs={600} backgroundColor="$blue10" />
         </Avatar>
       )
     }
@@ -176,7 +175,9 @@ function SettingItem({ title, screen, icon, specificScreen }: SettingItemProps) 
       <XStack alignItems="center" gap={12}>
         {renderIcon()}
         <YStack>
-          <Text fontWeight="bold">{title}</Text>
+          <Text color="$textPrimary" fontWeight="bold">
+            {title}
+          </Text>
         </YStack>
       </XStack>
       <ChevronRight size={20} color="$textSecondary" />

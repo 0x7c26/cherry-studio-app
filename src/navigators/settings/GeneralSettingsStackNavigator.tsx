@@ -18,6 +18,7 @@ export default function GeneralSettingsStackNavigator() {
     <Stack.Navigator
       screenOptions={{
         headerShown: false,
+        gestureResponseDistance: 9999,
         ...TransitionPresets.SlideFromRightIOS
       }}>
       <Stack.Screen name="GeneralSettingsScreen" component={GeneralSettingsScreen} />

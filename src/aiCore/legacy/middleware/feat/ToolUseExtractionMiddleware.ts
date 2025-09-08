@@ -1,3 +1,4 @@
+import { loggerService } from '@/services/LoggerService'
 import { ChunkType, MCPToolCreatedChunk, TextDeltaChunk } from '@/types/chunk'
 import { MCPTool } from '@/types/tool'
 import { parseToolUse } from '@/utils/mcpTool'
@@ -7,6 +8,8 @@ import { CompletionsParams, CompletionsResult, GenericChunk } from '../schemas'
 import { CompletionsContext, CompletionsMiddleware } from '../types'
 
 export const MIDDLEWARE_NAME = 'ToolUseExtractionMiddleware'
+
+const logger = loggerService.withContext('ToolUseExtractionMiddleware')
 
 // 工具使用标签配置
 const TOOL_USE_TAG_CONFIG: TagConfig = {
@@ -66,6 +69,8 @@ function createToolUseExtractionTransform(
     async transform(chunk: GenericChunk, controller) {
       try {
         // 处理文本内容，检测工具使用标签
+        logger.silly('chunk', chunk)
+
         if (chunk.type === ChunkType.TEXT_DELTA) {
           const textChunk = chunk as TextDeltaChunk
 
@@ -107,7 +112,7 @@ function createToolUseExtractionTransform(
         // 转发其他所有chunk
         controller.enqueue(chunk)
       } catch (error) {
-        console.error(`🔧 [${MIDDLEWARE_NAME}] Error processing chunk:`, error)
+        logger.error('Error processing chunk:', error as Error)
         controller.error(error)
       }
     },

@@ -3,6 +3,7 @@ import { KnowledgeReference } from './knowledge'
 import { MCPToolResponse, NormalToolResponse, ToolUseResponse } from './mcp'
 import { Response, ResponseError } from './message'
 import { SdkToolCall } from './sdk'
+import { MCPTool } from './tool'
 import { WebSearchResponse } from './websearch'
 
 // Define Enum for Chunk Types
@@ -40,7 +41,9 @@ export enum ChunkType {
   BLOCK_COMPLETE = 'block_complete',
   ERROR = 'error',
   SEARCH_IN_PROGRESS_UNION = 'search_in_progress_union',
-  SEARCH_COMPLETE_UNION = 'search_complete_union'
+  SEARCH_COMPLETE_UNION = 'search_complete_union',
+  VIDEO_SEARCHED = 'video.searched',
+  IMAGE_SEARCHED = 'image.searched'
 }
 
 export interface LLMResponseCreatedChunk {
@@ -290,7 +293,7 @@ export interface ExternalToolCompleteChunk {
 export interface MCPToolCreatedChunk {
   type: ChunkType.MCP_TOOL_CREATED
   tool_calls?: SdkToolCall[] // 工具调用
-  tool_use_responses?: ToolUseResponse[] // 工具使用响应
+  tool_use_responses?: (Omit<ToolUseResponse, 'tool'> & { tool: MCPTool })[] // 工具使用响应
 }
 
 export interface MCPToolPendingChunk {
@@ -382,6 +385,31 @@ export interface SearchCompleteUnionChunk {
   type: ChunkType.SEARCH_COMPLETE_UNION
 }
 
+export interface VideoSearchedChunk {
+  /**
+   * The type of the chunk
+   */
+  type: ChunkType.VIDEO_SEARCHED
+
+  /**
+   * The video content of the chunk
+   */
+  video?: { type: 'url' | 'path'; content: string }
+
+  metadata?: Record<string, any>
+}
+
+export interface ImageSearchedChunk {
+  /**
+   * The type of the chunk
+   */
+  type: ChunkType.IMAGE_SEARCHED
+
+  content: string
+
+  metadata: Record<string, any>
+}
+
 export type Chunk =
   | BlockCreatedChunk // 消息块创建，无意义
   | BlockInProgressChunk // 消息块进行中，无意义
@@ -416,3 +444,5 @@ export type Chunk =
   | ErrorChunk // 错误
   | SearchInProgressUnionChunk // 搜索(知识库/互联网)进行中
   | SearchCompleteUnionChunk // 搜索(知识库/互联网)完成
+  | VideoSearchedChunk // 知识库检索视频
+  | ImageSearchedChunk // 知识库检索图片
