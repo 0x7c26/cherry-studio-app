@@ -1,22 +1,22 @@
-import { AudioLines, CirclePause, Copy, RefreshCw, TextSelect, Trash2 } from '@tamagui/lucide-icons'
-import { FC, memo, useEffect, useRef, useState } from 'react'
-import React from 'react'
+import { AudioLines, CirclePause, Copy, RefreshCw, TextSelect, ThumbsUp, Trash2 } from '@/componentsV2/icons/LucideIcon'
+import React, { FC, memo, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import { TranslatedIcon, TranslationIcon } from '@/components/icons/TranslationIcon'
-import TextSelectionSheet, { TextSelectionSheetRef } from '@/components/sheets/TextSelectionSheet'
-import ContextMenu, { ContextMenuListProps } from '@/components/ui/ContextMenu'
+import { TranslatedIcon, TranslationIcon } from '@/componentsV2/icons'
+import TextSelectionSheet, { TextSelectionSheetRef } from '@/componentsV2/features/Sheet/TextSelectionSheet'
 import { useMessageActions } from '@/hooks/useMessageActions'
 import { Assistant } from '@/types/assistant'
 import { Message } from '@/types/message'
+import { ContextMenu, ContextMenuListProps } from '@/componentsV2'
 
 interface MessageItemProps {
   children: React.ReactNode
   message: Message
   assistant?: Assistant
+  isMultiModel?: boolean
 }
 
-const MessageContextMenu: FC<MessageItemProps> = ({ children, message, assistant }) => {
+const MessageContextMenu: FC<MessageItemProps> = ({ children, message, assistant, isMultiModel = false }) => {
   const { t } = useTranslation()
   const textSelectionSheetRef = useRef<TextSelectionSheetRef>(null)
   const [messageContent, setMessageContent] = useState('')
@@ -30,7 +30,9 @@ const MessageContextMenu: FC<MessageItemProps> = ({ children, message, assistant
     handlePlay,
     handleTranslate,
     handleDeleteTranslation,
-    getMessageContent
+    getMessageContent,
+    handleBestAnswer,
+    isUseful
   } = useMessageActions({ message, assistant })
 
   const handleSelectText = async () => {
@@ -54,24 +56,34 @@ const MessageContextMenu: FC<MessageItemProps> = ({ children, message, assistant
 
   const contextMenuItems: ContextMenuListProps[] = [
     {
-      title: t('common.select_text'),
-      iOSIcon: 'character.cursor.ibeam',
-      androidIcon: <TextSelect size={16} color="$textPrimary" />,
-      onSelect: handleSelectText
-    },
-    {
       title: t('common.copy'),
       iOSIcon: 'document.on.document',
-      androidIcon: <Copy size={16} color="$textPrimary" />,
+      androidIcon: <Copy size={16} />,
       onSelect: handleCopy
+    },
+    {
+      title: t('common.select_text'),
+      iOSIcon: 'character.cursor.ibeam',
+      androidIcon: <TextSelect size={16} />,
+      onSelect: handleSelectText
     },
     ...(message.role === 'assistant'
       ? [
           {
             title: t('common.regenerate'),
             iOSIcon: 'arrow.clockwise' as const,
-            androidIcon: <RefreshCw size={16} color="$textPrimary" />,
+            androidIcon: <RefreshCw size={16} />,
             onSelect: handleRegenerate
+          }
+        ]
+      : []),
+    ...(message.role === 'assistant' && isMultiModel
+      ? [
+          {
+            title: t('button.best_answer'),
+            iOSIcon: isUseful ? ('hand.thumbsup.fill' as const) : ('hand.thumbsup' as const),
+            androidIcon: isUseful ? <ThumbsUp size={16} className="fill-current" /> : <ThumbsUp size={16} />,
+            onSelect: handleBestAnswer
           }
         ]
       : []),
@@ -81,16 +93,18 @@ const MessageContextMenu: FC<MessageItemProps> = ({ children, message, assistant
       androidIcon: getAudioIcon(),
       onSelect: handlePlay
     },
+
     {
       title: isTranslated ? t('common.delete_translation') : t('message.translate_message'),
       iOSIcon: 'translate',
       androidIcon: isTranslated ? (
-        <TranslatedIcon size={16} color={isTranslated ? 'red' : '$textPrimary'} />
+        <TranslatedIcon size={16} color={isTranslated ? 'red' : undefined} />
       ) : (
-        <TranslationIcon size={16} color="$textPrimary" />
+        <TranslationIcon size={16} />
       ),
       destructive: isTranslated,
       color: isTranslated ? 'red' : undefined,
+      backgroundColor: isTranslated ? 'rgba(239, 68, 68, 0.1)' : undefined,
       onSelect: isTranslated ? handleDeleteTranslation : handleTranslate
     },
     {
@@ -99,13 +113,16 @@ const MessageContextMenu: FC<MessageItemProps> = ({ children, message, assistant
       androidIcon: <Trash2 size={16} color="red" />,
       destructive: true,
       color: 'red',
+      backgroundColor: 'rgba(239, 68, 68, 0.1)',
       onSelect: handleDelete
     }
   ]
 
   return (
     <>
-      <ContextMenu list={contextMenuItems} activeOpacity={1}>{children}</ContextMenu>
+      <ContextMenu list={contextMenuItems} withHighLight={false}>
+        {children}
+      </ContextMenu>
 
       <TextSelectionSheet ref={textSelectionSheetRef} content={messageContent} />
     </>

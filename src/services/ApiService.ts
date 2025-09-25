@@ -2,8 +2,7 @@ import { t } from 'i18next'
 import { isEmpty, takeRight } from 'lodash'
 
 import LegacyAiProvider from '@/aiCore'
-import AiProvider from '@/aiCore'
-import ModernAiProvider from '@/aiCore/index_new'
+
 import { CompletionsParams } from '@/aiCore/legacy/middleware/schemas'
 import { AiSdkMiddlewareConfig } from '@/aiCore/middleware/AiSdkMiddlewareBuilder'
 import { buildStreamTextParams, convertMessagesToSdkMessages } from '@/aiCore/prepareParams'
@@ -39,7 +38,7 @@ export async function fetchChatCompletion({
 
   const mcpTools: MCPTool[] = []
 
-  console.log('fetchChatCompletion', assistant)
+  onChunkReceived({ type: ChunkType.LLM_RESPONSE_CREATED })
 
   if (prompt) {
     messages = [
@@ -61,8 +60,6 @@ export async function fetchChatCompletion({
     requestOptions: options
   })
 
-  logger.info('fetchChatCompletion', capabilities)
-
   const middlewareConfig: AiSdkMiddlewareConfig = {
     streamOutput: assistant.settings?.streamOutput ?? true,
     onChunk: onChunkReceived,
@@ -73,12 +70,12 @@ export async function fetchChatCompletion({
     isImageGenerationEndpoint: isDedicatedImageGenerationModel(assistant.model || getDefaultModel()),
     enableWebSearch: capabilities.enableWebSearch,
     enableGenerateImage: capabilities.enableGenerateImage,
+    enableUrlContext: capabilities.enableUrlContext,
     mcpTools,
     uiMessages
   }
 
   // --- Call AI Completions ---
-  onChunkReceived({ type: ChunkType.LLM_RESPONSE_CREATED })
   await AI.completions(modelId, aiSdkParams, {
     ...middlewareConfig,
     assistant,
@@ -89,7 +86,7 @@ export async function fetchChatCompletion({
 }
 
 export async function fetchModels(provider: Provider): Promise<SdkModel[]> {
-  const AI = new AiProvider(provider)
+  const AI = new AiProviderNew(provider)
 
   try {
     return await AI.models()
@@ -167,7 +164,7 @@ export async function checkApi(provider: Provider, model: Model): Promise<void> 
   }
 }
 
-export async function fetchTopicNaming(topicId: string) {
+export async function fetchTopicNaming(topicId: string, regenerate: boolean = false) {
   logger.info('Fetching topic naming...')
   const topic = await getTopicById(topicId)
 
@@ -176,7 +173,7 @@ export async function fetchTopicNaming(topicId: string) {
     return
   }
 
-  if (topic.name !== t('topics.new_topic')) {
+  if (topic.name !== t('topics.new_topic') && !regenerate) {
     return
   }
 
@@ -195,7 +192,7 @@ export async function fetchTopicNaming(topicId: string) {
   const streamProcessorCallbacks = createStreamProcessor(callbacks)
   const quickAssistant = await getAssistantById('quick')
 
-  if (!quickAssistant.model) {
+  if (!quickAssistant.defaultModel) {
     return
   }
 
@@ -207,15 +204,15 @@ export async function fetchTopicNaming(topicId: string) {
   // LLM对多条消息的总结有问题，用单条结构化的消息表示会话内容会更好
   const mainTextMessages = await filterMainTextMessages(contextMessages)
 
-  const llmMessages = await convertMessagesToSdkMessages(mainTextMessages, quickAssistant.model)
+  const llmMessages = await convertMessagesToSdkMessages(mainTextMessages, quickAssistant.defaultModel)
 
-  const AI = new ModernAiProvider(quickAssistant.model || getDefaultModel(), provider)
+  const AI = new AiProviderNew(quickAssistant.defaultModel || getDefaultModel(), provider)
   const { params: aiSdkParams, modelId } = await buildStreamTextParams(llmMessages, quickAssistant, provider)
 
   const middlewareConfig: AiSdkMiddlewareConfig = {
     streamOutput: false,
     onChunk: streamProcessorCallbacks,
-    model: quickAssistant.model,
+    model: quickAssistant.defaultModel,
     provider: provider,
     enableReasoning: false,
     isPromptToolUse: false,
@@ -223,6 +220,7 @@ export async function fetchTopicNaming(topicId: string) {
     isImageGenerationEndpoint: false,
     enableWebSearch: false,
     enableGenerateImage: false,
+    enableUrlContext: false,
     mcpTools: []
   }
 

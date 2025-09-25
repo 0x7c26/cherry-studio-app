@@ -1,9 +1,8 @@
 import { isEmpty } from 'lodash'
-import { FC, memo } from 'react'
-import React from 'react'
+import React, { FC, memo } from 'react'
 import { useTranslation } from 'react-i18next'
 import Markdown from 'react-native-marked'
-import { View } from 'tamagui'
+import { View } from 'react-native'
 
 import { useTheme } from '@/hooks/useTheme'
 import { MainTextMessageBlock, ThinkingMessageBlock, TranslationMessageBlock } from '@/types/message'

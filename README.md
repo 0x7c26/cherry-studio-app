@@ -22,6 +22,7 @@ English | [中文](./README-zh.md)
 - **State Management**: Redux Toolkit
 
 ## 🚀 Development
+
 > Related development documentation is in the docs folder
 
 1. **Clone the repository**
@@ -50,10 +51,8 @@ npx drizzle-kit generate
 
 5. **Start the application**
 
-> If using physical device debugging, you need to `yarn remove expo-dev-client`
-> ⚠️Before submitting PR, don't push this package to the remote repository
-
 iOS:
+
 ```bash
 npx expo prebuild -p ios
 
@@ -63,6 +62,7 @@ npx expo run:ios -d
 ```
 
 Android:
+
 ```bash
 npx expo prebuild -p android
 npx expo run:android -d

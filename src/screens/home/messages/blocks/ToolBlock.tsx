@@ -1,5 +1,4 @@
 import React from 'react'
-import { View } from 'tamagui'
 
 import { ToolMessageBlock } from '@/types/message'
 
@@ -10,11 +9,7 @@ interface Props {
 }
 
 const ToolBlock: React.FC<Props> = ({ block }) => {
-  return (
-    <View>
-      <MessageTools block={block} />
-    </View>
-  )
+  return <MessageTools block={block} />
 }
 
 export default React.memo(ToolBlock)

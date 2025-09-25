@@ -4,7 +4,7 @@
  * 提供工具调用相关的处理API，每个交互使用一个新的实例
  */
 
-import type { ProviderMetadata, ToolSet, TypedToolCall, TypedToolResult } from 'ai'
+import type { ToolSet, TypedToolCall, TypedToolError, TypedToolResult } from 'ai'
 
 import { loggerService } from '@/services/LoggerService'
 import { Chunk, ChunkType } from '@/types/chunk'
@@ -17,25 +17,59 @@ import { BaseTool, MCPTool } from '@/types/tool'
 
 const logger = loggerService.withContext('ToolCallChunkHandler')
 
+export type ToolcallsMap = {
+  toolCallId: string
+  toolName: string
+  args: any
+  // mcpTool 现在可以是 MCPTool 或我们为 Provider 工具创建的通用类型
+  tool: BaseTool
+}
+
 /**
  * 工具调用处理器类
  */
 export class ToolCallChunkHandler {
-  //   private onChunk: (chunk: Chunk) => void
-  private activeToolCalls = new Map<
-    string,
-    {
-      toolCallId: string
-      toolName: string
-      args: any
-      // mcpTool 现在可以是 MCPTool 或我们为 Provider 工具创建的通用类型
-      tool: BaseTool
-    }
-  >()
+  private static globalActiveToolCalls = new Map<string, ToolcallsMap>()
+
+  private activeToolCalls = ToolCallChunkHandler.globalActiveToolCalls
+
   constructor(
     private onChunk: (chunk: Chunk) => void,
     private mcpTools: MCPTool[]
   ) {}
+
+  /**
+   * 内部静态方法：添加活跃工具调用的核心逻辑
+   */
+  private static addActiveToolCallImpl(toolCallId: string, map: ToolcallsMap): boolean {
+    if (!ToolCallChunkHandler.globalActiveToolCalls.has(toolCallId)) {
+      ToolCallChunkHandler.globalActiveToolCalls.set(toolCallId, map)
+      return true
+    }
+
+    return false
+  }
+
+  /**
+   * 实例方法：添加活跃工具调用
+   */
+  private addActiveToolCall(toolCallId: string, map: ToolcallsMap): boolean {
+    return ToolCallChunkHandler.addActiveToolCallImpl(toolCallId, map)
+  }
+
+  /**
+   * 获取全局活跃的工具调用
+   */
+  public static getActiveToolCalls() {
+    return ToolCallChunkHandler.globalActiveToolCalls
+  }
+
+  /**
+   * 静态方法：添加活跃工具调用（外部访问）
+   */
+  public static addActiveToolCall(toolCallId: string, map: ToolcallsMap): boolean {
+    return ToolCallChunkHandler.addActiveToolCallImpl(toolCallId, map)
+  }
 
   //   /**
   //    * 设置 onChunk 回调
@@ -44,109 +78,109 @@ export class ToolCallChunkHandler {
   //     this.onChunk = callback
   //   }
 
-  handleToolCallCreated(
-    chunk:
-      | {
-          type: 'tool-input-start'
-          id: string
-          toolName: string
-          providerMetadata?: ProviderMetadata
-          providerExecuted?: boolean
-        }
-      | {
-          type: 'tool-input-end'
-          id: string
-          providerMetadata?: ProviderMetadata
-        }
-      | {
-          type: 'tool-input-delta'
-          id: string
-          delta: string
-          providerMetadata?: ProviderMetadata
-        }
-  ): void {
-    switch (chunk.type) {
-      case 'tool-input-start': {
-        // 能拿到说明是mcpTool
-        // if (this.activeToolCalls.get(chunk.id)) return
-
-        const tool: BaseTool | MCPTool = {
-          id: chunk.id,
-          name: chunk.toolName,
-          description: chunk.toolName,
-          type: chunk.toolName.startsWith('builtin_') ? 'builtin' : 'provider'
-        }
-        this.activeToolCalls.set(chunk.id, {
-          toolCallId: chunk.id,
-          toolName: chunk.toolName,
-          args: '',
-          tool
-        })
-        const toolResponse: MCPToolResponse | NormalToolResponse = {
-          id: chunk.id,
-          tool: tool,
-          arguments: {},
-          status: 'pending',
-          toolCallId: chunk.id
-        }
-        this.onChunk({
-          type: ChunkType.MCP_TOOL_PENDING,
-          responses: [toolResponse]
-        })
-        break
-      }
-
-      case 'tool-input-delta': {
-        const toolCall = this.activeToolCalls.get(chunk.id)
-
-        if (!toolCall) {
-          logger.warn(`🔧 [ToolCallChunkHandler] Tool call not found: ${chunk.id}`)
-          return
-        }
-
-        toolCall.args += chunk.delta
-        break
-      }
-
-      case 'tool-input-end': {
-        const toolCall = this.activeToolCalls.get(chunk.id)
-        this.activeToolCalls.delete(chunk.id)
-
-        if (!toolCall) {
-          logger.warn(`🔧 [ToolCallChunkHandler] Tool call not found: ${chunk.id}`)
-          return
-        }
-
-        // const toolResponse: ToolCallResponse = {
-        //   id: toolCall.toolCallId,
-        //   tool: toolCall.tool,
-        //   arguments: toolCall.args,
-        //   status: 'pending',
-        //   toolCallId: toolCall.toolCallId
-        // }
-        // logger.debug('toolResponse', toolResponse)
-        // this.onChunk({
-        //   type: ChunkType.MCP_TOOL_PENDING,
-        //   responses: [toolResponse]
-        // })
-        break
-      }
-    }
-    // if (!toolCall) {
-    //   Logger.warn(`🔧 [ToolCallChunkHandler] Tool call not found: ${chunk.id}`)
-    //   return
-    // }
-    // this.onChunk({
-    //   type: ChunkType.MCP_TOOL_CREATED,
-    //   tool_calls: [
-    //     {
-    //       id: chunk.id,
-    //       name: chunk.toolName,
-    //       status: 'pending'
-    //     }
-    //   ]
-    // })
-  }
+  // handleToolCallCreated(
+  //   chunk:
+  //     | {
+  //         type: 'tool-input-start'
+  //         id: string
+  //         toolName: string
+  //         providerMetadata?: ProviderMetadata
+  //         providerExecuted?: boolean
+  //       }
+  //     | {
+  //         type: 'tool-input-end'
+  //         id: string
+  //         providerMetadata?: ProviderMetadata
+  //       }
+  //     | {
+  //         type: 'tool-input-delta'
+  //         id: string
+  //         delta: string
+  //         providerMetadata?: ProviderMetadata
+  //       }
+  // ): void {
+  //   switch (chunk.type) {
+  //     case 'tool-input-start': {
+  //       // 能拿到说明是mcpTool
+  //       // if (this.activeToolCalls.get(chunk.id)) return
+  //
+  //       const tool: BaseTool | MCPTool = {
+  //         id: chunk.id,
+  //         name: chunk.toolName,
+  //         description: chunk.toolName,
+  //         type: chunk.toolName.startsWith('builtin_') ? 'builtin' : 'provider'
+  //       }
+  //       this.activeToolCalls.set(chunk.id, {
+  //         toolCallId: chunk.id,
+  //         toolName: chunk.toolName,
+  //         args: '',
+  //         tool
+  //       })
+  //       const toolResponse: MCPToolResponse | NormalToolResponse = {
+  //         id: chunk.id,
+  //         tool: tool,
+  //         arguments: {},
+  //         status: 'pending',
+  //         toolCallId: chunk.id
+  //       }
+  //       this.onChunk({
+  //         type: ChunkType.MCP_TOOL_PENDING,
+  //         responses: [toolResponse]
+  //       })
+  //       break
+  //     }
+  //
+  //     case 'tool-input-delta': {
+  //       const toolCall = this.activeToolCalls.get(chunk.id)
+  //
+  //       if (!toolCall) {
+  //         logger.warn(`🔧 [ToolCallChunkHandler] Tool call not found: ${chunk.id}`)
+  //         return
+  //       }
+  //
+  //       toolCall.args += chunk.delta
+  //       break
+  //     }
+  //
+  //     case 'tool-input-end': {
+  //       const toolCall = this.activeToolCalls.get(chunk.id)
+  //       this.activeToolCalls.delete(chunk.id)
+  //
+  //       if (!toolCall) {
+  //         logger.warn(`🔧 [ToolCallChunkHandler] Tool call not found: ${chunk.id}`)
+  //         return
+  //       }
+  //
+  //       // const toolResponse: ToolCallResponse = {
+  //       //   id: toolCall.toolCallId,
+  //       //   tool: toolCall.tool,
+  //       //   arguments: toolCall.args,
+  //       //   status: 'pending',
+  //       //   toolCallId: toolCall.toolCallId
+  //       // }
+  //       // logger.debug('toolResponse', toolResponse)
+  //       // this.onChunk({
+  //       //   type: ChunkType.MCP_TOOL_PENDING,
+  //       //   responses: [toolResponse]
+  //       // })
+  //       break
+  //     }
+  //   }
+  //   // if (!toolCall) {
+  //   //   Logger.warn(`🔧 [ToolCallChunkHandler] Tool call not found: ${chunk.id}`)
+  //   //   return
+  //   // }
+  //   // this.onChunk({
+  //   //   type: ChunkType.MCP_TOOL_CREATED,
+  //   //   tool_calls: [
+  //   //     {
+  //   //       id: chunk.id,
+  //   //       name: chunk.toolName,
+  //   //       status: 'pending'
+  //   //     }
+  //   //   ]
+  //   // })
+  // }
 
   /**
    * 处理工具调用事件
@@ -204,7 +238,7 @@ export class ToolCallChunkHandler {
     }
 
     // 记录活跃的工具调用
-    this.activeToolCalls.set(toolCallId, {
+    this.addActiveToolCall(toolCallId, {
       toolCallId,
       toolName,
       args,
@@ -273,4 +307,37 @@ export class ToolCallChunkHandler {
       })
     }
   }
+
+  handleToolError(
+    chunk: {
+      type: 'tool-error'
+    } & TypedToolError<ToolSet>
+  ): void {
+    const { toolCallId, error, input } = chunk
+    const toolCallInfo = this.activeToolCalls.get(toolCallId)
+
+    if (!toolCallInfo) {
+      logger.warn(`🔧 [ToolCallChunkHandler] Tool call info not found for ID: ${toolCallId}`)
+      return
+    }
+
+    const toolResponse: MCPToolResponse | NormalToolResponse = {
+      id: toolCallId,
+      tool: toolCallInfo.tool,
+      arguments: input,
+      status: 'error',
+      response: error,
+      toolCallId: toolCallId
+    }
+    this.activeToolCalls.delete(toolCallId)
+
+    if (this.onChunk) {
+      this.onChunk({
+        type: ChunkType.MCP_TOOL_COMPLETE,
+        responses: [toolResponse]
+      })
+    }
+  }
 }
+
+export const addActiveToolCall = ToolCallChunkHandler.addActiveToolCall.bind(ToolCallChunkHandler)

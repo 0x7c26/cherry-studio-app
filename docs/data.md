@@ -9,75 +9,82 @@ The application state is managed using Redux Toolkit with persistence via AsyncS
 ### Store Slices
 
 #### `app` - Application State
+
 ```typescript
 interface RuntimeState {
-  initialized: boolean      // App initialization status
-  welcomeShown: boolean     // Whether welcome screen has been shown
+  initialized: boolean // App initialization status
+  welcomeShown: boolean // Whether welcome screen has been shown
 }
 ```
 
 #### `assistant` - Assistant Management
+
 ```typescript
 interface AssistantsState {
-  builtInAssistants: Assistant[]  // Built-in AI assistants
+  builtInAssistants: Assistant[] // Built-in AI assistants
 }
 ```
 
 #### `settings` - User Settings
+
 ```typescript
 interface SettingsState {
-  avatar: string           // User avatar image path
-  userName: string         // User display name
-  userId: string          // Unique user identifier
-  theme: ThemeMode        // App theme (light/dark/system)
+  avatar: string // User avatar image path
+  userName: string // User display name
+  userId: string // Unique user identifier
+  theme: ThemeMode // App theme (light/dark/system)
 }
 ```
 
 #### `topic` - Current Topic State
+
 ```typescript
 interface TopicState {
-  currentTopicId: string   // Currently active conversation topic ID
+  currentTopicId: string // Currently active conversation topic ID
 }
 ```
 
 #### `websearch` - Web Search Configuration
+
 ```typescript
 interface WebSearchState {
-  searchWithTime: boolean              // Add current date to search queries
-  maxResults: number                   // Maximum search results count
-  excludeDomains: string[]             // Domains to exclude from search
-  subscribeSources: SubscribeSource[]  // Subscription sources for blacklists
-  overrideSearchService: boolean       // Override search service settings
-  contentLimit?: number                // Content limit for search results
-  providerConfig: Record<string, any>  // Provider-specific configurations
+  searchWithTime: boolean // Add current date to search queries
+  maxResults: number // Maximum search results count
+  excludeDomains: string[] // Domains to exclude from search
+  subscribeSources: SubscribeSource[] // Subscription sources for blacklists
+  overrideSearchService: boolean // Override search service settings
+  contentLimit?: number // Content limit for search results
+  providerConfig: Record<string, any> // Provider-specific configurations
 }
 
 interface SubscribeSource {
-  key: number           // Unique identifier
-  url: string          // Source URL
-  name: string         // Display name
+  key: number // Unique identifier
+  url: string // Source URL
+  name: string // Display name
   blacklist?: string[] // Domain blacklist from this source
 }
 ```
 
 #### `runtime` - Temporary State (Not Persisted)
+
 ```typescript
 interface RuntimeState {
-  timestamp: number                              // Current timestamp
-  export: { isExporting: boolean }               // Export operation state
+  timestamp: number // Current timestamp
+  export: { isExporting: boolean } // Export operation state
   websearch: {
-    activeSearches: Record<string, WebSearchStatus>  // Active web searches
+    activeSearches: Record<string, WebSearchStatus> // Active web searches
   }
 }
 ```
 
 #### `messages` - Message Management (Entity Adapter)
+
 ```typescript
 interface MessagesState extends EntityState<Message, string> {
-  messageIdsByTopic: Record<string, string[]>  // Topic-to-message mapping
-  currentTopicId: string | null                // Current active topic
-  loadingByTopic: Record<string, boolean>      // Loading state per topic
-  displayCount: number                         // Number of messages to display
+  messageIdsByTopic: Record<string, string[]> // Topic-to-message mapping
+  currentTopicId: string | null // Current active topic
+  loadingByTopic: Record<string, boolean> // Loading state per topic
+  displayCount: number // Number of messages to display
 }
 ```
 
@@ -88,6 +95,7 @@ The application uses SQLite with Drizzle ORM for persistent data storage. All ta
 ### Core Tables
 
 #### `assistants` - AI Assistant Configurations
+
 ```sql
 CREATE TABLE assistants (
   id TEXT PRIMARY KEY NOT NULL UNIQUE,
@@ -109,6 +117,7 @@ CREATE TABLE assistants (
 ```
 
 #### `topics` - Conversation Topics
+
 ```sql
 CREATE TABLE topics (
   id TEXT PRIMARY KEY NOT NULL UNIQUE,
@@ -129,6 +138,7 @@ CREATE INDEX idx_topics_assistant_id_created_at ON topics(assistant_id, created_
 ```
 
 #### `messages` - Chat Messages
+
 ```sql
 CREATE TABLE messages (
   id TEXT PRIMARY KEY NOT NULL UNIQUE,
@@ -156,6 +166,7 @@ CREATE INDEX idx_messages_assistant_id ON messages(assistant_id);
 ```
 
 #### `message_blocks` - Message Content Blocks
+
 ```sql
 CREATE TABLE message_blocks (
   id TEXT PRIMARY KEY NOT NULL UNIQUE,
@@ -203,6 +214,7 @@ CREATE INDEX idx_message_blocks_message_id ON message_blocks(message_id);
 ### Configuration Tables
 
 #### `providers` - LLM Service Providers
+
 ```sql
 CREATE TABLE providers (
   id TEXT PRIMARY KEY,
@@ -222,6 +234,7 @@ CREATE TABLE providers (
 ```
 
 #### `websearch_providers` - Web Search Services
+
 ```sql
 CREATE TABLE websearch_providers (
   id TEXT PRIMARY KEY,
@@ -240,6 +253,7 @@ CREATE TABLE websearch_providers (
 ### Storage and Knowledge Tables
 
 #### `files` - Uploaded Files
+
 ```sql
 CREATE TABLE files (
   id TEXT PRIMARY KEY NOT NULL UNIQUE,
@@ -257,6 +271,7 @@ CREATE TABLE files (
 ```
 
 #### `knowledges` - Knowledge Bases
+
 ```sql
 CREATE TABLE knowledges (
   id TEXT PRIMARY KEY NOT NULL UNIQUE,
@@ -277,6 +292,7 @@ CREATE TABLE knowledges (
 ```
 
 #### `backup_providers` - Backup Configurations
+
 ```sql
 CREATE TABLE backup_providers (
   id TEXT PRIMARY KEY,
@@ -288,6 +304,7 @@ CREATE TABLE backup_providers (
 ## Data Relationships
 
 ### Primary Relationships
+
 - `assistants` → `topics` (one-to-many)
 - `topics` → `messages` (one-to-many)
 - `messages` → `message_blocks` (one-to-many)
@@ -295,6 +312,7 @@ CREATE TABLE backup_providers (
 - `websearch_providers` → `assistants` (one-to-many via websearch_provider_id)
 
 ### Data Flow
+
 1. **User creates conversation** → New `topic` created, linked to `assistant`
 2. **User sends message** → New `message` created, linked to `topic` and `assistant`
 3. **Assistant responds** → Multiple `message_blocks` created for different content types
@@ -304,11 +322,13 @@ CREATE TABLE backup_providers (
 ## Storage Considerations
 
 ### Redux Store
+
 - **Persisted**: app, assistant, settings, topic, websearch, messages
 - **Not Persisted**: runtime (temporary state)
 - **Storage**: AsyncStorage (React Native)
 
 ### SQLite Database
+
 - **Location**: Local device storage via Expo SQLite
 - **Migrations**: Managed by Drizzle ORM
 - **Indexes**: Optimized for common query patterns (topic/message lookups)

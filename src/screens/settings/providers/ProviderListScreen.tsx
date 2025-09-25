@@ -1,20 +1,15 @@
 import { BottomSheetModal } from '@gorhom/bottom-sheet'
-import { FlashList, ListRenderItemInfo } from '@shopify/flash-list'
-import { Plus } from '@tamagui/lucide-icons'
+import { Plus } from '@/componentsV2/icons/LucideIcon'
 import React, { useCallback, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ActivityIndicator } from 'react-native'
-import { YStack } from 'tamagui'
-
-import { SettingContainer, SettingGroup } from '@/components/settings'
-import { HeaderBar } from '@/components/settings/HeaderBar'
-import { ProviderSheet } from '@/components/settings/providers/AddProviderSheet'
-import { ProviderItem } from '@/components/settings/providers/ProviderItem'
-import SafeAreaContainer from '@/components/ui/SafeAreaContainer'
-import { SearchInput } from '@/components/ui/SearchInput'
+import { YStack, SafeAreaContainer, Container, Group, HeaderBar, SearchInput } from '@/componentsV2'
 import { useAllProviders } from '@/hooks/useProviders'
 import { useSearch } from '@/hooks/useSearch'
 import { Provider } from '@/types/assistant'
+import { AddProviderSheet } from '@/componentsV2/features/SettingsScreen/AddProviderSheet'
+import { ProviderItem } from '@/componentsV2/features/SettingsScreen/ProviderItem'
+import { LegendList } from '@legendapp/list'
 
 export default function ProviderListScreen() {
   const { t } = useTranslation()
@@ -24,6 +19,8 @@ export default function ProviderListScreen() {
 
   const [sheetMode, setSheetMode] = useState<'add' | 'edit'>('add')
   const [editingProvider, setEditingProvider] = useState<Provider | undefined>(undefined)
+  // 当编辑provider icon时需要通过refresh key刷新
+  const [refreshKey, setRefreshKey] = useState(0)
 
   const {
     searchText,
@@ -50,14 +47,21 @@ export default function ProviderListScreen() {
   const handleProviderSave = () => {
     // Force refresh by clearing and resetting the editing provider
     setEditingProvider(undefined)
+    // Increment refresh key to force ProviderItem re-render
+    setRefreshKey(prev => prev + 1)
   }
 
-  const renderProviderItem = ({ item }: ListRenderItemInfo<Provider>) => (
-    <ProviderItem key={item.id} provider={item} mode={item.enabled ? 'enabled' : 'checked'} onEdit={onEditProvider} />
+  const renderProviderItem = ({ item }: { item: Provider }) => (
+    <ProviderItem
+      key={`${item.id}-${refreshKey}`}
+      provider={item}
+      mode={item.enabled ? 'enabled' : 'checked'}
+      onEdit={onEditProvider}
+    />
   )
 
   return (
-    <SafeAreaContainer>
+    <SafeAreaContainer style={{ paddingBottom: 0 }}>
       <HeaderBar
         title={t('settings.provider.list.title')}
         rightButton={{
@@ -70,26 +74,33 @@ export default function ProviderListScreen() {
           <ActivityIndicator />
         </SafeAreaContainer>
       ) : (
-        <SettingContainer paddingBottom={0}>
+        <Container className="pb-0 gap-4">
           <SearchInput placeholder={t('settings.provider.search')} value={searchText} onChangeText={setSearchText} />
 
-          <YStack flex={1} height="100%">
-            <SettingGroup flex={1}>
-              <FlashList
+          <YStack className="flex-1" style={{ height: '100%' }}>
+            <Group className="flex-1">
+              <LegendList
                 data={filteredProviders}
                 renderItem={renderProviderItem}
                 keyExtractor={item => item.id}
                 estimatedItemSize={60}
                 showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ paddingBottom: 24 }}
                 extraData={providers}
+                contentContainerStyle={{ paddingBottom: 30 }}
+                drawDistance={2000}
+                recycleItems
               />
-            </SettingGroup>
+            </Group>
           </YStack>
-        </SettingContainer>
+        </Container>
       )}
 
-      <ProviderSheet ref={bottomSheetRef} mode={sheetMode} editProvider={editingProvider} onSave={handleProviderSave} />
+      <AddProviderSheet
+        ref={bottomSheetRef}
+        mode={sheetMode}
+        editProvider={editingProvider}
+        onSave={handleProviderSave}
+      />
     </SafeAreaContainer>
   )
 }

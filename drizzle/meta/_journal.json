@@ -15,6 +15,13 @@
       "when": 1753254324023,
       "tag": "0001_ordinary_stryfe",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1757318601593,
+      "tag": "0002_omniscient_leech",
+      "breakpoints": true
     }
   ]
 }

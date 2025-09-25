@@ -27,9 +27,16 @@
       "settings.reasoning.high": "高",
       "settings.reasoning.low": "低",
       "settings.reasoning.medium": "中",
+      "settings.reasoning.minimal": "微念",
       "settings.reasoning.off": "關閉",
       "settings.stream_output": "串流輸出",
       "settings.temperature": "溫度",
+      "settings.tooluse": {
+        "empty": "未設定工具調用方式",
+        "function": "函數呼叫",
+        "prompt": "提示詞呼叫",
+        "title": "工具呼叫方式"
+      },
       "settings.top_p": "Top P",
       "sort": {
         "alphabetical": "按字母順序排列的",
@@ -46,14 +53,19 @@
     },
     "button": {
       "add": "新增",
+      "best_answer": "最佳回答",
       "checking": "檢查中...",
+      "generate_topic_name": "生成話題名稱",
       "image_generate": "圖像生成",
       "manage": "管理",
       "multiple": "複選",
       "placeholder": "隨便問些什麼",
       "recents": "最近",
+      "rename_topic_name": "編輯話題名稱",
       "save": "保存",
+      "save_image": "保存到“照片”",
       "select_model": "選擇模型",
+      "share": "分享",
       "sort": "排序",
       "start_check_model": "讓我們開始",
       "success": "成功！",
@@ -89,13 +101,18 @@
       "clear_all": "清除全部",
       "close": "關閉",
       "confirm": "確認",
+      "copied": "已複製",
+      "copy": "複製文本",
       "delete": "刪除",
+      "delete_translation": "刪除翻譯",
       "description": "描述",
+      "detail": "詳細",
       "edit": "編輯",
       "enabled": "已啟用",
       "error_occurred": "發生錯誤",
       "file": "檔案",
       "generateImage": "建立圖片",
+      "go_to_settings": "前往設定",
       "language": "語言",
       "last_month": "上個月",
       "last_week": "上週",
@@ -107,36 +124,44 @@
       "older": "較舊",
       "others": "其他人",
       "photo": "相片",
+      "play": "播放",
       "preset": "預設",
       "prompt": "提示詞",
+      "regenerate": "重新生成",
       "rename": "重新命名",
       "save": "儲存",
+      "saved": "保存",
       "search_placeholder": "搜尋...",
       "see_all": "查看全部",
+      "select_text": "選擇文本",
       "source": "來源",
+      "stop": "停止",
       "this_week": "本週",
       "today": "今天",
       "tool": "工具",
+      "translate": "翻譯",
       "visit": "訪問",
       "websearch": "網路搜尋",
-      "yesterday": "昨天",
-      "copy": "複製文本",
-      "select_text": "選擇文本",
-      "delete_translation": "刪除翻譯",
-      "play": "播放",
-      "regenerate": "重新生成",
-      "stop": "停止",
-      "translate": "翻譯"
+      "yesterday": "昨天"
     },
     "error": {
+      "availableProviders": "可用供應商",
+      "availableTools": "可用工具",
       "backup": {
         "file_format": "備份檔案格式錯誤",
         "file_invalid": "備份檔案無效，需在Cherry Studio中透過匯出至行動裝置取得",
         "title": "備份失敗"
       },
+      "cause": "原因",
       "chat": {
         "response": "出錯了，如果沒有設定 API 金鑰，請前往 設定 > 模型供應商 中設定金鑰"
       },
+      "content": "內容",
+      "data": "資料",
+      "detail": "錯誤詳情",
+      "errors": "錯誤清單",
+      "finishReason": "完成原因",
+      "functionality": "功能",
       "http": {
         "400": "請求錯誤，請檢查請求參數是否正確。如果修改了模型設定，請重設為預設設定",
         "401": "身份驗證失敗，請檢查 API 金鑰是否正確",
@@ -148,20 +173,49 @@
         "503": "服務暫時無法使用，請稍後再試",
         "504": "閘道器逾時，請稍後再試"
       },
+      "lastError": "最後錯誤",
+      "maxEmbeddingsPerCall": "每次呼叫最大嵌入數",
+      "message": "錯誤訊息",
       "missing_user_message": "無法切換模型回應：原始使用者訊息已被刪除。請發送新訊息以取得此模型之回應。",
       "model": {
         "exists": "模型已存在"
       },
+      "modelId": "模型ID",
+      "modelType": "模型類型",
+      "name": "錯誤名稱",
       "no_api_key": "API 金鑰未設定",
+      "originalError": "原始錯誤",
+      "originalMessage": "原始訊息",
+      "parameter": "參數",
       "pause_placeholder": "已中斷",
+      "prompt": "提示詞",
+      "provider": "供應商",
+      "providerId": "供應商ID",
       "provider_disabled": "模型供應商未啟用",
+      "reason": "原因",
       "render": {
         "description": "訊息內容渲染失敗，請檢查訊息內容格式是否正確",
         "title": "渲染錯誤"
       },
+      "requestBodyValues": "請求體",
+      "requestUrl": "請求地址",
+      "response": "回應",
+      "responseBody": "回應體",
+      "responseHeaders": "回應標頭",
+      "responses": "回應",
+      "role": "角色",
+      "stack": "堆疊追蹤",
+      "statusCode": "狀態碼",
+      "statusText": "狀態文本",
+      "text": "文字",
+      "toolInput": "工具輸入",
+      "toolName": "工具名稱",
       "translate_assistant_model_not_defined": "翻譯助手模型未配置，請前往設定 > 預設助手中配置翻譯助手的模型",
       "unknown": "未知錯誤",
-      "user_message_not_found": "無法找到原始使用者訊息"
+      "usage": "使用情形",
+      "user_message_not_found": "無法找到原始使用者訊息",
+      "value": "值",
+      "values": "值"
     },
     "errors": {
       "cannotOpenLink": "無法打開連結: {{error}}",
@@ -223,6 +277,7 @@
       "topics.empty": "未找到主題"
     },
     "inputs": {
+      "mentions": "@ {{number}} 個模型",
       "placeholder": "傳送訊息..."
     },
     "menu": {
@@ -238,11 +293,17 @@
       }
     },
     "message": {
+      "assistant_deleted": "助手已刪除",
       "delete_message": "刪除訊息",
       "delete_message_confirmation": "您確定要刪除這條訊息嗎？",
+      "delete_topic": "刪除主題",
+      "delete_topic_confirmation": "您確定要刪除這個主題嗎？",
       "delete_translation": "刪除翻譯",
+      "marked_as_best_answer": "已標記為最佳回答",
       "searching": "搜尋中...",
+      "topic_deleted": "主題已刪除",
       "translate_message": "翻譯訊息",
+      "unmarked_as_best_answer": "已取消最佳回答標記",
       "websearch": {
         "fetch_complete": "已完成 {{count}} 次搜尋..."
       }
@@ -390,6 +451,9 @@
           "filename": "檔名",
           "scan_qr_code": {
             "description": "從Cherry Studio掃描QR碼",
+            "grant_permission": "授與權限",
+            "permission_denied": "未取得相機權限。請在裝置設定中啟用相機權限以掃描QR碼。",
+            "requesting_permission": "正在請求相機權限...",
             "success": "連接成功 🎉",
             "success_description": "您現在可以點擊發送按鈕來恢復資料！",
             "title": "掃描QR碼"
@@ -423,11 +487,8 @@
             "success_description": "恢復成功，祝您使用愉快！"
           },
           "steps": {
-            "restore_assistants": "還原助理",
-            "restore_llm_providers": "恢復LLM供應商",
-            "restore_messages_blocks": "恢復訊息",
-            "restore_topics": "恢復主題",
-            "restore_websearch": "恢復網路搜尋"
+            "restore_messages": "恢復訊息",
+            "restore_settings": "恢復設定"
           }
         },
         "third_party": "第三方連接",
@@ -569,6 +630,7 @@
         "list.title": "提供商列表",
         "not_found": "找不到提供商",
         "not_found_message": "導航到提供商頁面時發生錯誤",
+        "provider_deleted": "提供者已刪除",
         "search": "搜尋提供者...",
         "title": "模型提供者"
       },
@@ -637,13 +699,14 @@
         "blacklist.title": "黑名單",
         "blacklist_description": "來自以下網站的結果將不會出現在搜尋結果中",
         "blacklist_placeholder": "請使用以下格式（按行分隔）\n模式匹配：*://*.example.com/*\n正則表達式：/example\\.(net|org)/",
+        "builtin": "內建網路搜尋",
         "check_error": "檢查錯誤",
         "check_fail": "檢查失敗",
         "check_success": "檢查成功",
         "check_success_message": "API 運作正常",
         "contentLengthLimit": "內容長度限制",
         "empty": "尚未提供者...",
-        "empty.description": "點擊按鈕以新增供應商",
+        "empty.description": "前往新增供應商",
         "overrideSearchService": "覆蓋搜尋服務",
         "provider": {
           "api": {
@@ -681,6 +744,7 @@
       "rename": {
         "title": "重新命名主題"
       },
+      "select_assistant": "選擇新對話助手",
       "title": "主題",
       "title.recent": "最近的主題"
     }

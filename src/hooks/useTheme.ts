@@ -14,5 +14,5 @@ export function useTheme() {
   const reactNavigationTheme = activeTheme === 'dark' ? DarkTheme : DefaultTheme
   const isDark = activeTheme === 'dark'
 
-  return { settedTheme, activeTheme, reactNavigationTheme, isDark }
+  return { themeSetting, settedTheme, activeTheme, reactNavigationTheme, isDark }
 }

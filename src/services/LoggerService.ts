@@ -1,4 +1,4 @@
-import { File, Paths } from 'expo-file-system/next'
+import { File, Paths } from 'expo-file-system'
 
 export type LogSourceWithContext = {
   module?: string

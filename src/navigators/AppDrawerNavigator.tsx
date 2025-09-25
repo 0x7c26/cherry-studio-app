@@ -4,10 +4,10 @@ import '@/i18n'
 import { createDrawerNavigator, DrawerNavigationOptions } from '@react-navigation/drawer'
 import React from 'react'
 
-import CustomDrawerContent from '@/components/menu/CustomDrawerContent'
 import AssistantStackNavigator from '@/navigators/AssistantStackNavigator'
 import HomeStackNavigator from '@/navigators/HomeStackNavigator'
 import { Width } from '@/utils/device'
+import CustomDrawerContent from '@/componentsV2/features/Menu/CustomDrawerContent'
 
 const Drawer = createDrawerNavigator()
 

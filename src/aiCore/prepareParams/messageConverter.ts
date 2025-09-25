@@ -4,7 +4,7 @@
  */
 
 import type { AssistantModelMessage, FilePart, ImagePart, ModelMessage, TextPart, UserModelMessage } from 'ai'
-import { File as ExpoFile } from 'expo-file-system/next'
+import { File as ExpoFile } from 'expo-file-system'
 
 import { isVisionModel } from '@/config/models'
 import { loggerService } from '@/services/LoggerService'

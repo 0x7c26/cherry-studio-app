@@ -1,7 +1,7 @@
 import React from 'react'
 import { ActivityIndicator, StyleSheet, View } from 'react-native'
 
-import SafeAreaContainer from '@/components/ui/SafeAreaContainer'
+import { SafeAreaContainer } from '@/componentsV2'
 import { useAssistant } from '@/hooks/useAssistant'
 import { Topic } from '@/types/assistant'
 

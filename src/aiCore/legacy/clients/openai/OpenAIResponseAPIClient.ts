@@ -1,4 +1,4 @@
-import { File, Paths } from 'expo-file-system/next'
+import { File, Paths } from 'expo-file-system'
 import { t } from 'i18next'
 import { isEmpty } from 'lodash'
 import OpenAI, { AzureOpenAI } from 'openai'
@@ -244,7 +244,7 @@ export class OpenAIResponseAPIClient extends OpenAIBaseClient<
       }
 
       if ([FileTypes.TEXT, FileTypes.DOCUMENT].includes(file.type)) {
-        const fileContent = new File(file.path).text().trim()
+        const fileContent = new File(file.path).textSync().trim()
         parts.push({
           type: 'input_text',
           text: file.origin_name + '\n' + fileContent

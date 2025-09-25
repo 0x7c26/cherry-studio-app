@@ -27,16 +27,17 @@
       "settings.reasoning.high": "沉思",
       "settings.reasoning.low": "浮想",
       "settings.reasoning.medium": "斟酌",
+      "settings.reasoning.minimal": "微念",
       "settings.reasoning.off": "关闭",
       "settings.stream_output": "流式输出",
       "settings.temperature": "温度",
-      "settings.top_p": "Top P",
       "settings.tooluse": {
-        "title": "工具调用方式",
+        "empty": "未设置工具调用方式",
         "function": "函数调用",
         "prompt": "提示词调用",
-        "empty": "未设置工具调用方式"
+        "title": "工具调用方式"
       },
+      "settings.top_p": "Top P",
       "sort": {
         "alphabetical": "按字母顺序的",
         "recent_add": "最近添加",
@@ -52,14 +53,19 @@
     },
     "button": {
       "add": "添加",
+      "best_answer": "最佳回复",
       "checking": "检查中...",
+      "generate_topic_name": "生成话题名称",
       "image_generate": "图像生成",
       "manage": "管理",
       "multiple": "多选",
       "placeholder": "随便问点什么",
       "recents": "最近",
+      "rename_topic_name": "编辑话题名称",
       "save": "保存",
+      "save_image": "保存到“照片”",
       "select_model": "选择型号",
+      "share": "分享",
       "sort": "排序",
       "start_check_model": "让我们开始",
       "success": "成功 🎉",
@@ -95,13 +101,18 @@
       "clear_all": "清除全部",
       "close": "关闭",
       "confirm": "确认",
+      "copied": "已复制",
+      "copy": "复制文本",
       "delete": "删除",
+      "delete_translation": "删除翻译",
       "description": "描述",
+      "detail": "详情",
       "edit": "编辑",
       "enabled": "已启用",
       "error_occurred": "发生错误",
       "file": "文件",
       "generateImage": "创建图片",
+      "go_to_settings": "前往设置",
       "language": "语言",
       "last_month": "上月",
       "last_week": "上周",
@@ -113,36 +124,44 @@
       "older": "更早",
       "others": "其他",
       "photo": "照片",
+      "play": "播放",
       "preset": "预设",
       "prompt": "提示词",
+      "regenerate": "重新生成",
       "rename": "重命名",
       "save": "保存",
+      "saved": "已保存",
       "search_placeholder": "搜索...",
       "see_all": "查看全部",
-      "source": "源",
+      "select_text": "选择文本",
+      "source": "来源",
+      "stop": "停止",
       "this_week": "本周",
       "today": "今天",
       "tool": "工具",
+      "translate": "翻译",
       "visit": "访问",
       "websearch": "网络搜索",
-      "yesterday": "昨天",
-      "copy": "复制文本",
-      "select_text": "选择文本",
-      "play": "播放",
-      "stop": "停止",
-      "regenerate": "重新生成",
-      "translate": "翻译",
-      "delete_translation": "删除翻译"
+      "yesterday": "昨天"
     },
     "error": {
+      "availableProviders": "可用提供商",
+      "availableTools": "可用工具",
       "backup": {
         "file_format": "备份文件格式错误",
         "file_invalid": "备份文件无效，需要在Cherry Studio中通过导出到移动端获取",
         "title": "备份失败"
       },
+      "cause": "原因",
       "chat": {
         "response": "出错了，如果没有配置 API 密钥，请前往设置 > 模型服务商中配置密钥"
       },
+      "content": "内容",
+      "data": "数据",
+      "detail": "错误详情",
+      "errors": "错误列表",
+      "finishReason": "完成原因",
+      "functionality": "功能",
       "http": {
         "400": "请求错误，请检查请求参数是否正确。如果修改了模型设置，请重置到默认设置",
         "401": "身份验证失败，请检查 API 密钥是否正确",
@@ -154,20 +173,49 @@
         "503": "服务不可用，请稍后再试",
         "504": "网关超时，请稍后再试"
       },
+      "lastError": "最后错误",
+      "maxEmbeddingsPerCall": "每次调用最大嵌入数",
+      "message": "错误消息",
       "missing_user_message": "无法切换模型响应：原始用户消息已被删除。请发送新消息以获取此模型的响应",
       "model": {
         "exists": "模型已存在"
       },
+      "modelId": "模型ID",
+      "modelType": "模型类型",
+      "name": "错误名称",
       "no_api_key": "API 密钥未配置",
+      "originalError": "原始错误",
+      "originalMessage": "原始消息",
+      "parameter": "参数",
       "pause_placeholder": "已中断",
+      "prompt": "提示词",
+      "provider": "提供商",
+      "providerId": "提供商ID",
       "provider_disabled": "模型服务商未启用",
+      "reason": "原因",
       "render": {
         "description": "消息内容渲染失败，请检查消息内容格式是否正确",
         "title": "渲染错误"
       },
+      "requestBodyValues": "请求体",
+      "requestUrl": "请求地址",
+      "response": "响应",
+      "responseBody": "响应体",
+      "responseHeaders": "响应头",
+      "responses": "响应",
+      "role": "角色",
+      "stack": "堆栈跟踪",
+      "statusCode": "状态码",
+      "statusText": "状态文本",
+      "text": "文本",
+      "toolInput": "工具输入",
+      "toolName": "工具名称",
       "translate_assistant_model_not_defined": "翻译助手模型未配置，请前往设置 > 默认助手中配置翻译助手的模型",
       "unknown": "未知错误",
-      "user_message_not_found": "无法找到原始用户消息"
+      "usage": "使用情况",
+      "user_message_not_found": "无法找到原始用户消息",
+      "value": "值",
+      "values": "值"
     },
     "errors": {
       "cannotOpenLink": "无法打开链接: {{error}}",
@@ -229,6 +277,7 @@
       "topics.empty": "未找到话题"
     },
     "inputs": {
+      "mentions": "@ {{number}} 个模型",
       "placeholder": "发送消息..."
     },
     "menu": {
@@ -244,11 +293,17 @@
       }
     },
     "message": {
+      "assistant_deleted": "助手已删除",
       "delete_message": "删除消息",
       "delete_message_confirmation": "您确定要删除这条消息吗？",
+      "delete_topic": "删除话题",
+      "delete_topic_confirmation": "您确定要删除这个话题吗？",
       "delete_translation": "删除翻译",
+      "marked_as_best_answer": "已标记为最佳回复",
       "searching": "正在搜索...",
+      "topic_deleted": "话题已删除",
       "translate_message": "翻译消息",
+      "unmarked_as_best_answer": "已取消最佳回复标记",
       "websearch": {
         "fetch_complete": "已完成 {{count}} 次搜索..."
       }
@@ -396,6 +451,9 @@
           "filename": "文件名",
           "scan_qr_code": {
             "description": "请使用Cherry Studio扫码",
+            "grant_permission": "授予权限",
+            "permission_denied": "未获得相机权限。请在设备设置中启用相机权限以扫描二维码。",
+            "requesting_permission": "正在请求相机权限...",
             "success": "连接成功 🎉",
             "success_description": "现在可以点击发送按钮来恢复数据了！",
             "title": "扫描二维码"
@@ -429,11 +487,8 @@
             "success_description": "恢复成功，祝您使用愉快！"
           },
           "steps": {
-            "restore_assistants": "恢复助手",
-            "restore_llm_providers": "恢复LLM服务商",
-            "restore_messages_blocks": "恢复消息",
-            "restore_topics": "恢复话题",
-            "restore_websearch": "恢复网络搜索"
+            "restore_messages": "恢复消息",
+            "restore_settings": "恢复配置"
           }
         },
         "third_party": "第三方连接",
@@ -575,6 +630,7 @@
         "list.title": "服务商列表",
         "not_found": "未找到服务商",
         "not_found_message": "导航到服务商页面时出现错误",
+        "provider_deleted": "服务商已删除",
         "search": "搜索服务商...",
         "title": "模型服务商"
       },
@@ -643,13 +699,14 @@
         "blacklist.title": "黑名单",
         "blacklist_description": "来自以下网站的结果将不会出现在搜索结果中",
         "blacklist_placeholder": "请使用以下格式（按行分隔）\n模式匹配：*://*.example.com/*\n正则表达式：/example\\.(net|org)/",
+        "builtin": "内置网络搜索",
         "check_error": "检查错误",
         "check_fail": "检查失败",
         "check_success": "检查成功 🎉",
         "check_success_message": "API 运作正常",
         "contentLengthLimit": "内容长度限制",
         "empty": "暂无服务商...",
-        "empty.description": "点击按钮添加服务商",
+        "empty.description": "前往添加服务商",
         "overrideSearchService": "覆盖搜索服务",
         "provider": {
           "api": {
@@ -687,6 +744,7 @@
       "rename": {
         "title": "重命名话题"
       },
+      "select_assistant": "选择新对话助手",
       "title": "话题",
       "title.recent": "最近的话题"
     }

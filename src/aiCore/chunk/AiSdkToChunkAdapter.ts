@@ -161,6 +161,10 @@ export class AiSdkToChunkAdapter {
         this.toolCallHandler.handleToolCall(chunk)
         break
 
+      case 'tool-error':
+        this.toolCallHandler.handleToolError(chunk)
+        break
+
       case 'tool-result':
         // 原始的工具调用结果（未被中间件处理）
         this.toolCallHandler.handleToolResult(chunk)
@@ -275,7 +279,7 @@ export class AiSdkToChunkAdapter {
       case 'source':
         if (chunk.sourceType === 'url') {
           // if (final.webSearchResults.length === 0) {
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
           const { sourceType: _, ...rest } = chunk
           final.webSearchResults.push(rest)
           // }

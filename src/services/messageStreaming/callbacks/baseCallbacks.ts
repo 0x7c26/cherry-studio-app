@@ -1,4 +1,3 @@
-import { fetchTopicNaming } from '@/services/ApiService'
 import { loggerService } from '@/services/LoggerService'
 import { estimateMessagesUsage } from '@/services/TokenService'
 import { Assistant } from '@/types/assistant'
@@ -147,9 +146,6 @@ export const createBaseCallbacks = async (deps: BaseCallbacksDependencies) => {
           }
           await blockManager.smartBlockUpdate(possibleBlockId, changes, blockManager.lastBlockType!, true)
         }
-
-        // 更新topic的name
-        await fetchTopicNaming(topicId)
 
         if (
           response &&

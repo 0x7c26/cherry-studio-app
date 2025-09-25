@@ -26,7 +26,6 @@ async function getFileContent(file: FileMetadata) {
   return ''
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function getMessageParam(message: Message): Promise<MessageItem[]> {
   const param: MessageItem[] = []
 

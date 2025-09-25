@@ -8,7 +8,7 @@
  */
 import { type AiRequestContext, definePlugin } from '@cherrystudio/ai-core'
 // import { generateObject } from '@cherrystudio/ai-core'
-import type { ModelMessage } from 'ai'
+import { generateText, LanguageModel, type ModelMessage } from 'ai'
 import { isEmpty } from 'lodash'
 
 import {
@@ -75,9 +75,7 @@ async function analyzeSearchIntent(
     shouldKnowledgeSearch?: boolean
     shouldMemorySearch?: boolean
     lastAnswer?: ModelMessage
-    context: AiRequestContext & {
-      isAnalyzing?: boolean
-    }
+    context: AiRequestContext
     topicId: string
   }
 ): Promise<ExtractResults | undefined> {
@@ -133,18 +131,16 @@ async function analyzeSearchIntent(
       hasKnowledgeSearch: needKnowledgeExtract
     })
 
-    const { text: result } = await context.executor
-      .generateText(model.id, {
-        prompt: formattedPrompt
+    const { text: result } = await generateText({
+      model: context.model as LanguageModel,
+      prompt: formattedPrompt
+    }).finally(() => {
+      logger.info('Intent analysis generateText call completed', {
+        modelId: model.id,
+        topicId: options.topicId,
+        requestId: context.requestId
       })
-      .finally(() => {
-        context.isAnalyzing = false
-        logger.info('Intent analysis generateText call completed', {
-          modelId: model.id,
-          topicId: options.topicId,
-          requestId: context.requestId
-        })
-      })
+    })
     const parsedResult = extractInfoFromXML(result)
     logger.debug('Intent analysis result', { parsedResult })
 
@@ -179,26 +175,15 @@ export const searchOrchestrationPlugin = (assistant: Assistant, topicId: string)
   // 存储意图分析结果
   const intentAnalysisResults: { [requestId: string]: ExtractResults } = {}
   const userMessages: { [requestId: string]: ModelMessage } = {}
-  let currentContext: AiRequestContext | null = null
 
   return definePlugin({
     name: 'search-orchestration',
     enforce: 'pre', // 确保在其他插件之前执行
 
-    configureContext: (context: AiRequestContext) => {
-      if (currentContext) {
-        context.isAnalyzing = currentContext.isAnalyzing
-      }
-
-      currentContext = context
-    },
-
     /**
      * 🔍 Step 1: 意图识别阶段
      */
     onRequestStart: async (context: AiRequestContext) => {
-      if (context.isAnalyzing) return
-
       // 没开启任何搜索则不进行意图分析
       if (!assistant.webSearchProviderId) return
 
@@ -243,7 +228,6 @@ export const searchOrchestrationPlugin = (assistant: Assistant, topicId: string)
      * 🔧 Step 2: 工具配置阶段
      */
     transformParams: async (params: any, context: AiRequestContext) => {
-      if (context.isAnalyzing) return params
       // logger.info('🔧 Configuring tools based on intent...', context.requestId)
 
       try {
@@ -289,7 +273,6 @@ export const searchOrchestrationPlugin = (assistant: Assistant, topicId: string)
       // context.isAnalyzing = false
       // logger.info('context.isAnalyzing', context, result)
       // logger.info('💾 Starting memory storage...', context.requestId)
-      if (context.isAnalyzing) return
 
       try {
         // 清理缓存

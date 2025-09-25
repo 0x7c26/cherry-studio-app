@@ -1,5 +1,6 @@
 import React from 'react'
-import { Spinner, View } from 'tamagui'
+import { View } from 'react-native'
+import { Spinner } from 'heroui-native'
 
 import { MessageBlockStatus, MessageBlockType, PlaceholderMessageBlock } from '@/types/message'
 
@@ -10,8 +11,8 @@ interface PlaceholderBlockProps {
 const PlaceholderBlock: React.FC<PlaceholderBlockProps> = ({ block }) => {
   if (block.status === MessageBlockStatus.PROCESSING && block.type === MessageBlockType.UNKNOWN) {
     return (
-      <View flex={1} alignItems="flex-start">
-        <Spinner size="small" color="$gray" />
+      <View className="flex-1 items-start my-2.5">
+        <Spinner size="sm" color="default" />
       </View>
     )
   }

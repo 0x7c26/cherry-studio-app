@@ -1,11 +1,12 @@
 import { Dispatch } from '@reduxjs/toolkit'
-import { Directory, File, Paths } from 'expo-file-system/next'
+import { Directory, File, Paths } from 'expo-file-system'
 import { unzip } from 'react-native-zip-archive'
 
+import { DEFAULT_DOCUMENTS_STORAGE } from '@/constants/storage'
 import { loggerService } from '@/services/LoggerService'
 import { setAvatar, setUserName } from '@/store/settings'
 import { Assistant } from '@/types/assistant'
-import { BackupData, ExportIndexedData, ExportReduxData } from '@/types/databackup'
+import { ExportIndexedData, ExportReduxData, ImportIndexedData, ImportReduxData } from '@/types/databackup'
 import { FileMetadata } from '@/types/file'
 import { Message } from '@/types/message'
 
@@ -17,16 +18,7 @@ import { upsertWebSearchProviders } from '../../db/queries/websearchProviders.qu
 import { upsertTopics } from './TopicService'
 const logger = loggerService.withContext('Backup Service')
 
-const fileStorageDir = new Directory(Paths.cache, 'Files')
-
-export type RestoreStepId =
-  | 'restore_llm_providers'
-  | 'restore_assistants'
-  | 'restore_websearch'
-  | 'restore_user_avatar'
-  | 'restore_user_name'
-  | 'restore_topics'
-  | 'restore_messages_blocks'
+export type RestoreStepId = 'restore_settings' | 'restore_messages'
 
 export type StepStatus = 'pending' | 'in_progress' | 'completed' | 'error'
 
@@ -39,21 +31,10 @@ export type ProgressUpdate = {
 type OnProgressCallback = (update: ProgressUpdate) => void
 
 async function restoreIndexedDbData(data: ExportIndexedData, onProgress: OnProgressCallback, dispatch: Dispatch) {
-  onProgress({ step: 'restore_topics', status: 'in_progress' })
-  await new Promise(resolve => setTimeout(resolve, 100)) // Small delay for UI
+  onProgress({ step: 'restore_messages', status: 'in_progress' })
   await upsertTopics(data.topics)
-  onProgress({ step: 'restore_topics', status: 'completed' })
-  await new Promise(resolve => setTimeout(resolve, 200)) // Delay between steps
-
-  onProgress({ step: 'restore_messages_blocks', status: 'in_progress' })
-  await new Promise(resolve => setTimeout(resolve, 100)) // Small delay for UI
   await upsertBlocks(data.message_blocks)
   await upsertMessages(data.messages)
-  onProgress({ step: 'restore_messages_blocks', status: 'completed' })
-  await new Promise(resolve => setTimeout(resolve, 200)) // Delay between steps
-
-  onProgress({ step: 'restore_user_avatar', status: 'in_progress' })
-  await new Promise(resolve => setTimeout(resolve, 100)) // Small delay for UI
 
   if (data.settings) {
     const avatarSetting = data.settings.find(setting => setting.id === 'image://avatar')
@@ -63,19 +44,12 @@ async function restoreIndexedDbData(data: ExportIndexedData, onProgress: OnProgr
     }
   }
 
-  onProgress({ step: 'restore_user_avatar', status: 'completed' })
-  await new Promise(resolve => setTimeout(resolve, 200)) // Delay between steps
+  onProgress({ step: 'restore_messages', status: 'completed' })
 }
 
 async function restoreReduxData(data: ExportReduxData, onProgress: OnProgressCallback, dispatch: Dispatch) {
-  onProgress({ step: 'restore_llm_providers', status: 'in_progress' })
-  await new Promise(resolve => setTimeout(resolve, 100)) // Small delay for UI
+  onProgress({ step: 'restore_settings', status: 'in_progress' })
   await upsertProviders(data.llm.providers)
-  onProgress({ step: 'restore_llm_providers', status: 'completed' })
-  await new Promise(resolve => setTimeout(resolve, 200)) // Delay between steps
-
-  onProgress({ step: 'restore_assistants', status: 'in_progress' })
-  await new Promise(resolve => setTimeout(resolve, 100)) // Small delay for UI
   const allSourceAssistants = [data.assistants.defaultAssistant, ...data.assistants.assistants]
 
   // default assistant为built_in, 其余为external
@@ -87,19 +61,11 @@ async function restoreReduxData(data: ExportReduxData, onProgress: OnProgressCal
       }) as Assistant
   )
   await upsertAssistants(assistants)
-  onProgress({ step: 'restore_assistants', status: 'completed' })
-  await new Promise(resolve => setTimeout(resolve, 200)) // Delay between steps
-
-  onProgress({ step: 'restore_websearch', status: 'in_progress' })
-  await new Promise(resolve => setTimeout(resolve, 100)) // Small delay for UI
   await upsertWebSearchProviders(data.websearch.providers)
-  onProgress({ step: 'restore_websearch', status: 'completed' })
   await new Promise(resolve => setTimeout(resolve, 200)) // Delay between steps
 
-  onProgress({ step: 'restore_user_name', status: 'in_progress' })
-  await new Promise(resolve => setTimeout(resolve, 100)) // Small delay for UI
   dispatch(setUserName(data.settings.userName))
-  onProgress({ step: 'restore_user_name', status: 'completed' })
+  onProgress({ step: 'restore_settings', status: 'completed' })
 }
 
 export async function restore(
@@ -107,32 +73,56 @@ export async function restore(
   onProgress: OnProgressCallback,
   dispatch: Dispatch
 ) {
-  if (!fileStorageDir.exists) {
-    fileStorageDir.create({ intermediates: true, overwrite: true })
+  if (!DEFAULT_DOCUMENTS_STORAGE.exists) {
+    DEFAULT_DOCUMENTS_STORAGE.create({ intermediates: true, overwrite: true })
   }
 
+  let unzipPath: string | undefined
+
   try {
-    const dataDir = Paths.join(fileStorageDir, backupFile.name.replace('.zip', ''))
-    const unzipPath = await unzip(backupFile.path, dataDir)
+    const dataDir = Paths.join(DEFAULT_DOCUMENTS_STORAGE, backupFile.name.replace('.zip', ''))
+    unzipPath = await unzip(backupFile.path, dataDir)
 
     const dataFile = new File(unzipPath, 'data.json')
 
-    const data = JSON.parse(dataFile.text()) as BackupData
-
-    const { reduxData, indexedData } = transformBackupData(data)
+    const { reduxData, indexedData } = transformBackupData(dataFile.textSync())
 
     await restoreReduxData(reduxData, onProgress, dispatch)
     await restoreIndexedDbData(indexedData, onProgress, dispatch)
   } catch (error) {
     logger.error('restore error: ', error)
     throw error
+  } finally {
+    if (unzipPath) {
+      try {
+        new Directory(unzipPath).delete()
+      } catch (cleanupError) {
+        logger.error('Failed to cleanup temporary directory: ', cleanupError)
+      }
+    }
   }
 }
 
-function transformBackupData(data: BackupData): { reduxData: ExportReduxData; indexedData: ExportIndexedData } {
-  const topicsFromRedux = data.redux.assistants.assistants.flatMap(a => a.topics)
+function transformBackupData(data: string): { reduxData: ExportReduxData; indexedData: ExportIndexedData } {
+  const orginalData = JSON.parse(data)
+  const localStorage = orginalData.localStorage
 
-  const allMessages = data.indexedDB.topics.flatMap(t => t.messages)
+  const persistDataString = localStorage['persist:cherry-studio']
+
+  const rawReduxData = JSON.parse(persistDataString)
+
+  const reduxData: ImportReduxData = {
+    assistants: JSON.parse(rawReduxData.assistants),
+    llm: JSON.parse(rawReduxData.llm),
+    websearch: JSON.parse(rawReduxData.websearch),
+    settings: JSON.parse(rawReduxData.settings)
+  }
+
+  const topicsFromRedux = reduxData.assistants.assistants.flatMap(a => a.topics)
+
+  const indexedDb: ImportIndexedData = orginalData.indexedDB
+
+  const allMessages = indexedDb.topics.flatMap(t => t.messages)
 
   const messagesByTopicId = allMessages.reduce<Record<string, Message[]>>((acc, message) => {
     const { topicId } = message
@@ -156,12 +146,12 @@ function transformBackupData(data: BackupData): { reduxData: ExportReduxData; in
   })
 
   return {
-    reduxData: data.redux as ExportReduxData,
+    reduxData: reduxData,
     indexedData: {
       topics: topicsWithMessages,
-      message_blocks: data.indexedDB.message_blocks,
+      message_blocks: indexedDb.message_blocks,
       messages: allMessages,
-      settings: data.indexedDB.settings
+      settings: indexedDb.settings
     }
   }
 }

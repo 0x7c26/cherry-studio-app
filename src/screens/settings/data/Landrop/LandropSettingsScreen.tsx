@@ -1,12 +1,10 @@
 import { useNavigation } from '@react-navigation/native'
-import { File, Paths } from 'expo-file-system/next'
-import React, { useEffect, useRef, useState } from 'react' // Import useRef
+import { File, Paths } from 'expo-file-system'
+import React, { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Alert } from 'react-native'
 
-import { RestoreProgressModal } from '@/components/settings/data/RestoreProgressModal'
-import { HeaderBar } from '@/components/settings/HeaderBar'
-import SafeAreaContainer from '@/components/ui/SafeAreaContainer'
+import { SafeAreaContainer, HeaderBar, RestoreProgressModal } from '@/componentsV2'
+import { useDialog } from '@/hooks/useDialog'
 import { useRestore } from '@/hooks/useRestore'
 import { useWebSocket, WebSocketStatus } from '@/hooks/useWebSocket'
 import { DataSourcesNavigationProps } from '@/types/naviagate'
@@ -15,6 +13,7 @@ import { QRCodeScanner } from './QRCodeScanner'
 
 export default function LandropSettingsScreen() {
   const { t } = useTranslation()
+  const dialog = useDialog()
   const navigation = useNavigation<DataSourcesNavigationProps>()
   const { status, filename, connect } = useWebSocket()
   const [scannedIP, setScannedIP] = useState<string | null>(null)
@@ -56,10 +55,11 @@ export default function LandropSettingsScreen() {
 
     setScannedIP(ip)
     connect(ip)
-    Alert.alert(
-      t('settings.data.landrop.scan_qr_code.success'),
-      t('settings.data.landrop.scan_qr_code.success_description')
-    )
+    dialog.open({
+      type: 'info',
+      title: t('settings.data.landrop.scan_qr_code.success'),
+      content: t('settings.data.landrop.scan_qr_code.success_description')
+    })
   }
 
   const handleModalClose = () => {

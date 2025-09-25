@@ -49,28 +49,6 @@ export const createToolCallbacks = (deps: ToolCallbacksDependencies) => {
       }
     },
 
-    onToolCallInProgress: (toolResponse: MCPToolResponse) => {
-      // 根据 toolResponse.id 查找对应的块ID
-      const targetBlockId = toolCallIdToBlockIdMap.get(toolResponse.id)
-
-      if (targetBlockId && toolResponse.status === 'invoking') {
-        const changes = {
-          status: MessageBlockStatus.PROCESSING,
-          metadata: { rawMcpToolResponse: toolResponse }
-        }
-        blockManager.smartBlockUpdate(targetBlockId, changes, MessageBlockType.TOOL)
-      } else if (!targetBlockId) {
-        logger.warn(
-          `[onToolCallInProgress] No block ID found for tool ID: ${toolResponse.id}. Available mappings:`,
-          Array.from(toolCallIdToBlockIdMap.entries())
-        )
-      } else {
-        logger.warn(
-          `[onToolCallInProgress] Received unhandled tool status: ${toolResponse.status} for ID: ${toolResponse.id}`
-        )
-      }
-    },
-
     onToolCallComplete: (toolResponse: MCPToolResponse) => {
       const existingBlockId = toolCallIdToBlockIdMap.get(toolResponse.id)
       toolCallIdToBlockIdMap.delete(toolResponse.id)
@@ -95,17 +73,22 @@ export const createToolCallbacks = (deps: ToolCallbacksDependencies) => {
         }
 
         if (finalStatus === MessageBlockStatus.ERROR) {
-          changes.error = { message: `Tool execution failed/error`, details: toolResponse.response }
+          changes.error = {
+            message: `Tool execution failed/error`,
+            details: toolResponse.response,
+            name: null,
+            stack: null
+          }
         }
 
         blockManager.smartBlockUpdate(existingBlockId, changes, MessageBlockType.TOOL, true)
 
         // Handle citation block creation for web search results
-        if (toolResponse.tool.name === 'builtin_web_search' && toolResponse.response?.searchResults) {
+        if (toolResponse.tool.name === 'builtin_web_search' && toolResponse.response) {
           const citationBlock = createCitationBlock(
             assistantMsgId,
             {
-              response: { results: toolResponse.response.searchResults, source: WebSearchSource.WEBSEARCH }
+              response: { results: toolResponse.response, source: WebSearchSource.WEBSEARCH }
             },
             {
               status: MessageBlockStatus.SUCCESS

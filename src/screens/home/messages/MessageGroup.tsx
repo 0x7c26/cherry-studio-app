@@ -1,12 +1,12 @@
-import { FC } from 'react'
-import React from 'react'
-import { View } from 'tamagui'
+import React, { FC } from 'react'
+import { View } from 'react-native'
 
 import { Assistant } from '@/types/assistant'
 import { AssistantMessageStatus, GroupedMessage } from '@/types/message'
 
 import MessageItem from './Message'
 import MessageFooter from './MessageFooter'
+import MessageHeader from './MessageHeader'
 import MultiModelTab from './MultiModelTab'
 
 interface MessageGroupProps {
@@ -24,8 +24,8 @@ const MessageGroup: FC<MessageGroupProps> = ({ assistant, item }) => {
   const renderAssistantMessages = () => {
     if (messagesInGroup.length === 1) {
       return (
-        <View gap={10}>
-          {/*<MessageHeader assistant={assistant} message={messagesInGroup[0]} />*/}
+        <View className="gap-2">
+          <MessageHeader message={messagesInGroup[0]} />
           <MessageItem message={messagesInGroup[0]} assistant={assistant} />
           {/* 输出过程中不显示footer */}
           {messagesInGroup[0].status !== AssistantMessageStatus.PROCESSING && (
@@ -36,7 +36,7 @@ const MessageGroup: FC<MessageGroupProps> = ({ assistant, item }) => {
     }
 
     return (
-      <View gap={10}>
+      <View className="gap-2">
         {/*<MessageHeader assistant={assistant} message={messagesInGroup[0]} />*/}
         <MultiModelTab assistant={assistant} messages={messagesInGroup} />
       </View>

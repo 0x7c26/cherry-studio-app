@@ -15,7 +15,7 @@ import {
   Tool
 } from '@google/genai'
 import { nanoid } from '@reduxjs/toolkit'
-import { File, Paths } from 'expo-file-system/next'
+import { File, Paths } from 'expo-file-system'
 import { t } from 'i18next'
 
 import {
@@ -327,7 +327,7 @@ export class GeminiAPIClient extends BaseApiClient<
       }
 
       if ([FileTypes.TEXT, FileTypes.DOCUMENT].includes(file.type)) {
-        const fileContent = new File(file.path).text().trim()
+        const fileContent = new File(file.path).textSync().trim()
         parts.push({
           text: file.origin_name + '\n' + fileContent
         })

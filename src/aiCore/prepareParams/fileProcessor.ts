@@ -4,7 +4,7 @@
  */
 
 import type { FilePart, TextPart } from 'ai'
-import { File } from 'expo-file-system/next'
+import { File } from 'expo-file-system'
 
 import { loggerService } from '@/services/LoggerService'
 import { getProviderByModel } from '@/services/ProviderService'
@@ -35,7 +35,7 @@ export async function extractFileContent(message: Message): Promise<string> {
 
       for (const fileBlock of textFileBlocks) {
         const file = fileBlock.file
-        const fileContent = new File(file.path).text().trim()
+        const fileContent = new File(file.path).textSync().trim()
         const fileNameRow = 'file: ' + file.origin_name + '\n\n'
         text = text + fileNameRow + fileContent + divider
       }
@@ -56,7 +56,7 @@ export async function convertFileBlockToTextPart(fileBlock: FileMessageBlock): P
   // 处理文本文件
   if (file.type === FileTypes.TEXT) {
     try {
-      const fileContent = new File(file.path).text().trim()
+      const fileContent = new File(file.path).textSync().trim()
       return {
         type: 'text',
         text: `${file.origin_name}\n${fileContent.trim()}`
@@ -69,7 +69,7 @@ export async function convertFileBlockToTextPart(fileBlock: FileMessageBlock): P
   // 处理文档文件（PDF、Word、Excel等）- 提取为文本内容
   if (file.type === FileTypes.DOCUMENT) {
     try {
-      const fileContent = new File(file.path).text().trim()
+      const fileContent = new File(file.path).textSync().trim()
       return {
         type: 'text',
         text: `${file.origin_name}\n${fileContent.trim()}`

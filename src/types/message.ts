@@ -1,6 +1,7 @@
 import { CompletionUsage } from 'openai/resources/completions.mjs'
 
 import { Assistant, Metrics, Model, Topic, Usage } from './assistant'
+import { SerializedError } from './error'
 import { FileMetadata } from './file'
 import { GenerateImageResponse } from './image'
 import { KnowledgeReference } from './knowledge'
@@ -41,7 +42,7 @@ export interface BaseMessageBlock {
   status: MessageBlockStatus // 块状态
   model?: Model // 使用的模型
   metadata?: Record<string, any> // 通用元数据
-  error?: Record<string, any> // Added optional error field to base
+  error?: SerializedError // Added optional error field to base
 }
 
 export interface PlaceholderMessageBlock extends BaseMessageBlock {

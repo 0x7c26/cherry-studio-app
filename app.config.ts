@@ -1,3 +1,4 @@
+import 'tsx/cjs'
 export default {
   expo: {
     name: 'Cherry Studio',
@@ -19,9 +20,10 @@ export default {
         foregroundImage: './src/assets/images/adaptive-icon.png',
         backgroundColor: '#F65D5D'
       },
+      edgeToEdgeEnabled: true,
       package: 'com.anonymous.cherrystudio',
       userInterfaceStyle: 'automatic',
-      predictiveBackGestureEnabled: false
+      predictiveBackGestureEnabled: true
     },
     plugins: [
       ['expo-build-properties', { ios: { deploymentTarget: '15.5' } }],
@@ -88,6 +90,23 @@ export default {
           cameraPermission: 'Allow Cherry Studio App to access your camera',
           // microphonePermission: 'Allow Cherry Studio App to access your microphone',
           recordAudioAndroid: true
+        }
+      ],
+      [
+        'expo-media-library',
+        {
+          photosPermission: 'Allow Cherry Studio App to save images to your photo library.',
+          savePhotosPermission: 'Allow Cherry Studio App to save images to your photo library.',
+          isAccessMediaLocationEnabled: true
+        }
+      ],
+      ['react-native-compressor'],
+      ["react-native-edge-to-edge",
+        {
+          "android": {
+            "parentTheme": "Material3",
+            "enforceNavigationBarContrast": false
+          }
         }
       ]
     ],

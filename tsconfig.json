@@ -2,6 +2,7 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "noImplicitAny": false,
+    "esModuleInterop": true,
     "jsx": "react",
     "strict": true,
     "baseUrl": "src",
@@ -11,5 +12,5 @@
       "@mcp-trace/trace-node": ["../packages/mcp-trace/trace-node"]
     }
   },
-  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"]
+  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts", "nativewind-env.d.ts"]
 }

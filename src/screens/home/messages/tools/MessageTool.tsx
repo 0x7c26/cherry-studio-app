@@ -9,40 +9,36 @@ import { MessageWebSearchToolTitle } from './MessageWebSearchTool'
 interface Props {
   block: ToolMessageBlock
 }
+const prefix = 'builtin_'
 
-const BUILTIN_PREFIX = 'builtin_'
+const ChooseTool = (toolResponse: MCPToolResponse): { label: React.ReactNode; body: React.ReactNode } | null => {
+  let toolName = toolResponse.tool.name
 
-// 工具组件映射表
-const TOOL_COMPONENTS: Record<string, React.ComponentType<{ toolResponse: MCPToolResponse }>> = {
-  web_search: MessageWebSearchToolTitle,
-  web_search_preview: MessageWebSearchToolTitle
-  // knowledge_search: MessageKnowledgeSearchToolTitle,
-}
+  if (toolName.startsWith(prefix)) {
+    toolName = toolName.slice(prefix.length)
+  }
 
-// 获取默认工具组件
-const getDefaultToolComponent = (): React.ComponentType<{ toolResponse: MCPToolResponse }> => {
-  return MessageWebSearchToolTitle
-}
-
-// 标准化工具名称
-const normalizeToolName = (toolName: string): string => {
-  return toolName.startsWith(BUILTIN_PREFIX) ? toolName.slice(BUILTIN_PREFIX.length) : toolName
-}
-
-// 获取工具标题组件
-const getToolTitleComponent = (toolResponse: MCPToolResponse): React.ReactNode => {
-  const normalizedName = normalizeToolName(toolResponse.tool.name)
-  const ToolComponent = TOOL_COMPONENTS[normalizedName] || getDefaultToolComponent()
-
-  return <ToolComponent toolResponse={toolResponse} />
+  switch (toolName) {
+    case 'web_search':
+    case 'web_search_preview':
+      return {
+        label: <MessageWebSearchToolTitle toolResponse={toolResponse} />,
+        body: null
+      }
+    default:
+      return null
+  }
 }
 
 export default function MessageTool({ block }: Props) {
+  // FIXME: 语义错误，这里已经不是 MCP tool 了,更改rawMcpToolResponse需要改用户数据, 所以暂时保留
   const toolResponse = block.metadata?.rawMcpToolResponse
 
-  if (!toolResponse) {
-    return null
-  }
+  if (!toolResponse) return null
 
-  return getToolTitleComponent(toolResponse)
+  const toolRenderer = ChooseTool(toolResponse)
+
+  if (!toolRenderer) return null
+
+  return toolRenderer.label
 }

@@ -1,11 +1,12 @@
-import { FC, memo, useMemo } from 'react'
-import React from 'react'
-import { View, XStack } from 'tamagui'
+import React, { FC, memo, useMemo } from 'react'
+import { XStack } from '@/componentsV2'
+import { View } from 'react-native'
 
 import { loggerService } from '@/services/LoggerService'
 import {
   CitationMessageBlock,
   MainTextMessageBlock,
+  Message,
   MessageBlock,
   MessageBlockStatus,
   MessageBlockType
@@ -23,7 +24,9 @@ import TranslationBlock from './TranslationBlock'
 const logger = loggerService.withContext('Message Blocks Index')
 
 interface MessageBlockRendererProps {
-  blocks: MessageBlock[]
+  blocks: MessageBlock[] // 可以接收块ID数组或MessageBlock数组
+  messageStatus?: Message['status']
+  message: Message
 }
 
 /**
@@ -63,28 +66,28 @@ const prepareBlocksForRender = (blocks: MessageBlock[]) => {
   return { contentBlocks, citationBlocks }
 }
 
-const MessageBlockRenderer: FC<MessageBlockRendererProps> = ({ blocks }) => {
+const MessageBlockRenderer: FC<MessageBlockRendererProps> = ({ blocks, message }) => {
   const { contentBlocks, citationBlocks } = useMemo(() => prepareBlocksForRender(blocks), [blocks])
   return (
-    <View flex={1} width="100%" maxWidth="100%" style={{ gap: 5 }}>
+    <View>
       {contentBlocks.map(blockOrGroup => {
         if (Array.isArray(blockOrGroup)) {
           const groupKey = blockOrGroup[0]?.id || 'media-group'
           return (
-            <View key={groupKey} width="100%">
-              <XStack flexWrap="wrap" gap="5" width="100%">
-                {blockOrGroup.map(block => {
-                  switch (block.type) {
-                    case MessageBlockType.IMAGE:
-                      return <ImageBlock key={block.id} block={block} />
-                    case MessageBlockType.FILE:
-                      return <FileBlock key={block.id} block={block} />
-                    default:
-                      return null
-                  }
-                })}
-              </XStack>
-            </View>
+            <XStack
+              key={groupKey}
+              className={`flex-wrap gap-2 mt-2.5 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+              {blockOrGroup.map(block => {
+                switch (block.type) {
+                  case MessageBlockType.IMAGE:
+                    return <ImageBlock key={block.id} block={block} />
+                  case MessageBlockType.FILE:
+                    return <FileBlock key={block.id} block={block} />
+                  default:
+                    return null
+                }
+              })}
+            </XStack>
           )
         }
 
@@ -123,7 +126,7 @@ const MessageBlockRenderer: FC<MessageBlockRendererProps> = ({ blocks }) => {
             blockComponent = <ToolBlock key={block.id} block={block} />
             break
           case MessageBlockType.ERROR:
-            blockComponent = <ErrorBlock key={block.id} block={block} />
+            blockComponent = <ErrorBlock key={block.id} block={block} message={message} />
             break
           default:
             logger.warn('Unsupported block type in MessageBlockRenderer:', (block as any).type, block)

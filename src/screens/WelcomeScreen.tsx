@@ -1,12 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { StackActions, useNavigation } from '@react-navigation/native'
-import { useEffect, useRef, useState } from 'react'
-import React from 'react'
-import { Animated, Dimensions, Image, TouchableOpacity } from 'react-native'
+import React, { useEffect, useRef, useState } from 'react'
+import { Animated, Dimensions, TouchableOpacity, View } from 'react-native'
 import PagerView from 'react-native-pager-view'
-import { Button, Text, View, XStack, YStack } from 'tamagui'
+import { Button } from 'heroui-native'
 
-import SafeAreaContainer from '@/components/ui/SafeAreaContainer'
+import { Image, SafeAreaContainer, Text, XStack, YStack } from '@/componentsV2'
 import { useAppDispatch } from '@/store'
 import { setWelcomeShown } from '@/store/app'
 
@@ -94,38 +93,32 @@ export default function WelcomeScreen() {
 
   return (
     <SafeAreaContainer>
-      <YStack flex={1} alignItems="center" justifyContent="space-between" paddingVertical={20}>
-        <YStack alignItems="center" marginTop={20}>
+      <YStack className="flex-1 items-center justify-between py-5">
+        <YStack className="items-center mt-5">
           <Image source={require('@/assets/images/favicon.png')} style={{ width: 60, height: 60, borderRadius: 15 }} />
-          <Text fontSize={24} fontWeight="bold" marginTop={15}>
-            欢迎来到 <Text color="$color.">Cherry Studio</Text>
+          <Text className="text-2xl font-bold mt-4">
+            欢迎来到 <Text className="text-purple-600">Cherry Studio</Text>
           </Text>
-          <Text color="#9CA3AF" fontSize={16} marginTop={5}>
-            探索AI创作的无限可能
-          </Text>
+          <Text className="text-gray-400 text-base mt-1">探索AI创作的无限可能</Text>
         </YStack>
 
-        <View flex={1} justifyContent="center" alignItems="center" width="100%">
+        <View className="flex-1 justify-center items-center w-full">
           <PagerView
             ref={pagerRef}
             style={{ width: width, height: width }}
             initialPage={0}
             onPageSelected={handlePageSelected}>
             {carouselItems.map(item => (
-              <YStack key={item.id} alignItems="center" justifyContent="center" padding={20}>
+              <YStack key={item.id} className="items-center justify-center p-5">
                 <Image source={item.image} style={{ width: width * 0.6, height: width * 0.6, resizeMode: 'contain' }} />
-                <Text fontSize={20} fontWeight="bold" marginTop={20}>
-                  {item.title}
-                </Text>
-                <Text color="#9CA3AF" fontSize={14} textAlign="center" marginTop={10} paddingHorizontal={20}>
-                  {item.description}
-                </Text>
+                <Text className="text-xl font-bold mt-5">{item.title}</Text>
+                <Text className="text-gray-400 text-sm text-center mt-2 px-5">{item.description}</Text>
               </YStack>
             ))}
           </PagerView>
         </View>
 
-        <XStack justifyContent="center" marginBottom={30}>
+        <XStack className="justify-center mb-7">
           {carouselItems.map((_, index) => (
             <TouchableOpacity key={index} onPress={() => handleIndicatorPress(index)} activeOpacity={0.7}>
               <Animated.View
@@ -141,22 +134,14 @@ export default function WelcomeScreen() {
           ))}
         </XStack>
 
-        <Button
-          backgroundColor="#9333EA"
-          color="white"
-          fontSize={18}
-          fontWeight="bold"
-          borderRadius={10}
-          width="90%"
-          height={50}
-          marginBottom={15}
-          onPress={handleStart}>
-          立即开始
+        <Button className="bg-purple-600 w-[90%] h-[50px] mb-4 rounded-[10px]" onPress={handleStart}>
+          <Button.LabelContent>
+            <Text className="text-white text-lg font-bold">立即开始</Text>
+          </Button.LabelContent>
         </Button>
 
-        <Text color="#9CA3AF" fontSize={12} textAlign="center" marginBottom={10}>
-          点击"立即开始"，即表示你同意我们的 <Text color="#9333EA">服务条款</Text> 和{' '}
-          <Text color="#9333EA">隐私政策</Text>
+        <Text className="text-gray-400 text-xs text-center mb-2">
+          点击&ldquo;立即开始&rdquo;，即表示你同意我们的服务条款和隐私政策
         </Text>
       </YStack>
     </SafeAreaContainer>

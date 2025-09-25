@@ -1,5 +1,6 @@
 import { loggerService } from '@/services/LoggerService'
 import { Assistant, Topic } from '@/types/assistant'
+import { SerializedError } from '@/types/error'
 import { FileMetadata, FileTypes } from '@/types/file'
 import {
   AssistantMessageStatus,
@@ -194,7 +195,7 @@ export function createFileBlock(
  */
 export function createErrorBlock(
   messageId: string,
-  errorData: Record<string, any>,
+  errorData: SerializedError,
   overrides: Partial<Omit<ErrorMessageBlock, 'id' | 'messageId' | 'type' | 'error'>> = {}
 ): ErrorMessageBlock {
   const baseBlock = createBaseMessageBlock(messageId, MessageBlockType.ERROR, {
